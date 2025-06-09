@@ -1,0 +1,64 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String?
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tryOnRequests TryOnRequest[]
+
+  @@map("users")
+}
+
+model TryOnRequest {
+  id            String   @id @default(cuid())
+  predictionId  String   @unique // Fashn AI prediction ID
+  
+  // User info
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input data
+  modelImageUrl    String
+  garmentImageUrl  String
+  category         String
+  
+  // Processing status
+  status           RequestStatus @default(PENDING)
+  
+  // Results
+  resultImageUrl   String?
+  errorMessage     String?
+  
+  // Metadata
+  processingTime   Int?     // in seconds
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("try_on_requests")
+}
+
+enum RequestStatus {
+  PENDING    // Just submitted to Fashn AI
+  PROCESSING // Fashn AI is processing
+  COMPLETED  // Successfully completed
+  FAILED     // Processing failed
+  EXPIRED    // Took too long to complete
+}
