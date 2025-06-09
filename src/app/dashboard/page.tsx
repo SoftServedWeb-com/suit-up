@@ -1,31 +1,68 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, User, Shirt, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, User, Shirt, Loader2, Clock, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Header from "@/components/page/header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import ImageUpload from "@/components/image-upload";
 import CategorySelector from "@/components/category-selector";
 import TryOnResult from "@/components/try-on-selector";
-import HistoryGrid from "@/components/history-stack";
+import Header from "@/components/page/header";
 
-interface TryOnResult {
+
+interface TryOnRequest {
   id: string;
-  modelImage: string;
-  garmentImage: string;
-  resultImage: string;
+  predictionId: string;
+  modelImageUrl: string;
+  garmentImageUrl: string;
   category: string;
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "EXPIRED";
+  resultImageUrl?: string;
+  errorMessage?: string;
+  processingTime?: number;
   createdAt: string;
+  updatedAt: string;
+}
+
+interface ProcessingRequest {
+  requestId: string;
+  status: string;
+  startTime: number;
 }
 
 export default function Dashboard() {
   const [modelImage, setModelImage] = useState<File | null>(null);
   const [garmentImage, setGarmentImage] = useState<File | null>(null);
   const [category, setCategory] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [history, setHistory] = useState<TryOnResult[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Processing states
+  const [processingRequests, setProcessingRequests] = useState<ProcessingRequest[]>([]);
+  const [completedRequests, setCompletedRequests] = useState<TryOnRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<TryOnRequest[]>([]);
+
+  // Load user's try-on history on component mount
+  useEffect(() => {
+    loadTryOnHistory();
+  }, []);
+
+  const loadTryOnHistory = async () => {
+    try {
+      const response = await fetch("/api/try-on/status", {
+        method: "POST"
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAllRequests(data.requests);
+        setCompletedRequests(data.requests.filter((req: TryOnRequest) => req.status === "COMPLETED"));
+      }
+    } catch (error) {
+      console.error("Failed to load history:", error);
+    }
+  };
 
   const handleTryOn = async () => {
     if (!modelImage || !garmentImage || !category) {
@@ -33,8 +70,7 @@ export default function Dashboard() {
       return;
     }
 
-    setIsProcessing(true);
-    setResult(null);
+    setIsSubmitting(true);
 
     try {
       const formData = new FormData();
@@ -48,35 +84,107 @@ export default function Dashboard() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to process try-on");
+        throw new Error("Failed to submit try-on request");
       }
 
       const data = await response.json();
-      setResult(data.resultImage);
-
-      // Add to history
-      const newResult: TryOnResult = {
-        id: Date.now().toString(),
-        modelImage: URL.createObjectURL(modelImage),
-        garmentImage: URL.createObjectURL(garmentImage),
-        resultImage: data.resultImage,
-        category,
-        createdAt: new Date().toISOString(),
+      
+      // Add to processing queue
+      const newProcessingRequest: ProcessingRequest = {
+        requestId: data.requestId,
+        status: "submitted",
+        startTime: Date.now()
       };
-      setHistory((prev) => [newResult, ...prev]);
+      
+      setProcessingRequests(prev => [...prev, newProcessingRequest]);
+      
+      // Start polling for this request
+      startPolling(data.requestId);
+      
+      // Clear form
+      setModelImage(null);
+      setGarmentImage(null);
+      setCategory("");
+
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to process try-on. Please try again.");
+      alert("Failed to submit try-on request. Please try again.");
     } finally {
-      setIsProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleDeleteHistory = (id: string) => {
-    setHistory((prev) => prev.filter((item) => item.id !== id));
+  const startPolling = (requestId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/try-on/status?requestId=${requestId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update processing request status
+          setProcessingRequests(prev => 
+            prev.map(req => 
+              req.requestId === requestId 
+                ? { ...req, status: data.status }
+                : req
+            )
+          );
+
+          // If completed or failed, stop polling and update results
+          if (data.status === "COMPLETED" || data.status === "FAILED") {
+            clearInterval(pollInterval);
+            
+            // Remove from processing queue
+            setProcessingRequests(prev => 
+              prev.filter(req => req.requestId !== requestId)
+            );
+            
+            // Reload history to get updated data
+            loadTryOnHistory();
+          }
+        }
+      } catch (error) {
+        console.error("Polling error:", error);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Stop polling after 3 minutes (safety measure)
+    setTimeout(() => clearInterval(pollInterval), 180000);
   };
 
-  const isReadyToGenerate = modelImage && garmentImage && category && !isProcessing;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "PENDING":
+      case "submitted":
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case "PROCESSING":
+        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
+      case "COMPLETED":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "FAILED":
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+      case "PROCESSING":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+      case "FAILED":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    }
+  };
+
+  const isReadyToGenerate = modelImage && garmentImage && category && !isSubmitting;
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,12 +204,43 @@ export default function Dashboard() {
                 Try-On
               </TabsTrigger>
               <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                History
+                History ({allRequests.length})
               </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="try-on" className="space-y-8">
+            {/* Processing Queue */}
+            {processingRequests.length > 0 && (
+              <Card className="glass-card border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                    Processing Requests
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {processingRequests.map((req) => (
+                      <div key={req.requestId} className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getStatusIcon(req.status)}
+                          <span className="font-medium">
+                            {req.status === "submitted" ? "Submitted to AI" : 
+                             req.status === "PENDING" ? "In Queue" : 
+                             req.status === "PROCESSING" ? "Generating..." : req.status}
+                          </span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {Math.floor((Date.now() - req.startTime) / 1000)}s
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Upload Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <ImageUpload
@@ -141,10 +280,10 @@ export default function Dashboard() {
                   ${isReadyToGenerate ? 'hover:scale-105 hover:shadow-lg' : 'opacity-50 cursor-not-allowed'}
                 `}
               >
-                {isProcessing ? (
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Generating Magic...
+                    Submitting...
                   </>
                 ) : (
                   <>
@@ -155,20 +294,99 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            {/* Result */}
-            {result && (
+            {/* Latest Completed Result */}
+            {completedRequests.length > 0 && (
               <div className="max-w-2xl mx-auto">
                 <TryOnResult
-                  resultImage={result}
-                  modelImage={modelImage ? URL.createObjectURL(modelImage) : undefined}
-                  garmentImage={garmentImage ? URL.createObjectURL(garmentImage) : undefined}
+                  resultImage={completedRequests[0].resultImageUrl!}
+                  modelImage={completedRequests[0].modelImageUrl}
+                  garmentImage={completedRequests[0].garmentImageUrl}
                 />
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="history">
-            <HistoryGrid history={history} onDelete={handleDeleteHistory} />
+          <TabsContent value="history" className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Try-On History
+                  <Badge variant="secondary" className="ml-auto">
+                    {allRequests.length}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>Your virtual try-on sessions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {allRequests.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <Sparkles className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium text-foreground mb-2">No try-ons yet</h3>
+                    <p className="text-muted-foreground">
+                      Start by creating your first virtual try-on session!
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allRequests.map((request) => (
+                      <Card key={request.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
+                        <CardContent className="p-0">
+                          <div className="relative">
+                            {request.status === "COMPLETED" && request.resultImageUrl ? (
+                              <img
+                                src={request.resultImageUrl}
+                                alt="Try-on result"
+                                className="w-full h-48 object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-48 bg-muted flex items-center justify-center">
+                                {getStatusIcon(request.status)}
+                                <span className="ml-2 text-sm text-muted-foreground">
+                                  {request.status}
+                                </span>
+                              </div>
+                            )}
+                            
+                            <div className="p-4 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <Badge className={getStatusColor(request.status)}>
+                                  {request.status}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(request.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              
+                              <div className="flex gap-2">
+                                <img
+                                  src={request.modelImageUrl}
+                                  alt="Model"
+                                  className="w-12 h-12 object-cover rounded border-2 border-border"
+                                />
+                                <img
+                                  src={request.garmentImageUrl}
+                                  alt="Garment"
+                                  className="w-12 h-12 object-cover rounded border-2 border-border"
+                                />
+                              </div>
+                              
+                              {request.processingTime && (
+                                <p className="text-xs text-muted-foreground">
+                                  Processed in {request.processingTime}s
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>

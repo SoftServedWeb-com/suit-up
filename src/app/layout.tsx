@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,11 +20,40 @@ export const metadata: Metadata = {
   description: "Made by Aniz - SSW",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { userId, redirectToSignIn } = await auth();
+
+  // Protect the route by checking if the user is signed in
+  if (!userId) {
+    return redirectToSignIn();
+  }
+  // TODO For using dashboard change this.
+  const user = await currentUser();
+
+  if (user) {
+    const dbuser = await db.user.findUnique({
+      where: {
+        id: user.id!,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!dbuser) {
+      await db.user.create({
+        data: {
+          id: user.id,
+          email: user.emailAddresses[0].emailAddress,
+          name: user.firstName + " " + user.lastName,
+        },
+      });
+    }
+  }
   return (
     <ClerkProvider>
       <html lang="en">

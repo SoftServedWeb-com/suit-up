@@ -1,0 +1,37 @@
+import { db } from "@/db";
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+
+// Get all try-on requests for the current user
+export async function POST(request: Request) {
+  try {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await db.user.findUnique({
+      where: { clerkId: clerkUserId },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const tryOnRequests = await db.tryOnRequest.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 50, // Limit to recent 50 requests
+    });
+
+    return NextResponse.json({ requests: tryOnRequests });
+  } catch (error) {
+    console.error("Get requests error:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to get requests",
+      },
+      { status: 500 }
+    );
+  }
+}
