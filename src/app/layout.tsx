@@ -41,9 +41,9 @@ export default async function RootLayout({
   const user = await currentUser();
 
   if (user) {
-    const dbuser = await db.user.findUnique({
+    const dbuser = await db.user.findFirst({
       where: {
-        id: user.id!,
+        id: user.id,
       },
       select: {
         id: true,
