@@ -1,59 +1,96 @@
-import { NextResponse } from "next/server"
-import { put } from "@vercel/blob"
+// api/try-on/route.ts
+import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData()
-    const modelImageFile = formData.get("modelImage") as File
-    const garmentImageFile = formData.get("garmentImage") as File
-    const category = formData.get("category") as string
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    console.log("TRY ON :: ", JSON.stringify(formData))
+    const formData = await request.formData();
+    const modelImageFile = formData.get("modelImage") as File;
+    const garmentImageFile = formData.get("garmentImage") as File;
+    const category = formData.get("category") as string;
 
     if (!modelImageFile || !garmentImageFile || !category) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     // Upload images to Vercel Blob
-    const modelImageBlob = await put(`model-${Date.now()}-${modelImageFile.name}`, modelImageFile, { access: "public",addRandomSuffix: true, })
+    const modelImageBlob = await put(
+      `model-${Date.now()}-${modelImageFile.name}`, 
+      modelImageFile, 
+      { access: "public", addRandomSuffix: true }
+    );
 
-    const garmentImageBlob = await put(`garment-${Date.now()}-${garmentImageFile.name}`, garmentImageFile, {
-      access: "public",
-      addRandomSuffix: true
-    })
+    const garmentImageBlob = await put(
+      `garment-${Date.now()}-${garmentImageFile.name}`, 
+      garmentImageFile,
+      { access: "public", addRandomSuffix: true }
+    );
 
-    // Call Fashn.ai API
+    console.log("Images uploaded:", { 
+      modelImage: modelImageBlob.url, 
+      garmentImage: garmentImageBlob.url 
+    });
+
+    // Submit to Fashn AI
     const fashnResponse = await fetch("https://api.fashn.ai/v1/run", {
       method: "POST",
       body: JSON.stringify({
         model_image: modelImageBlob.url,
         garment_image: garmentImageBlob.url,
-        category: category,
+        category: category === "outerwear" ? "tops" : category,
       }),
       headers: {
         Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
         "Content-Type": "application/json",
       },
-    })
+    });
 
     if (!fashnResponse.ok) {
-      throw new Error(`Fashn.ai API error: ${fashnResponse.statusText}`)
+      const errorText = await fashnResponse.text();
+      console.error("Fashn.ai API error:", fashnResponse.status, errorText);
+      throw new Error(`Fashn.ai API error: ${fashnResponse.status}`);
     }
 
-    const fashnData = await fashnResponse.json()
-    console.log("FashnData : ", fashnData)
+    const fashnData = await fashnResponse.json();
+    const predictionId = fashnData.id;
 
-    // The API response structure may vary - adjust based on actual response
-    const resultImageUrl = fashnData.output_url || fashnData.result_image || fashnData.image_url
+    if (!predictionId) {
+      throw new Error("No prediction ID returned from Fashn.ai API");
+    }
+
+    console.log("Fashn AI prediction started:", predictionId);
+
+    // Save to database
+    const tryOnRequest = await db.tryOnRequest.create({
+      data: {
+        predictionId,
+        userId, // Using Clerk user ID directly
+        modelImageUrl: modelImageBlob.url,
+        garmentImageUrl: garmentImageBlob.url,
+        category,
+        status: "PENDING"
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      resultImage: resultImageUrl,
-      modelImage: modelImageBlob.url,
-      garmentImage: garmentImageBlob.url,
-    })
+      requestId: tryOnRequest.id,
+      predictionId,
+      status: "submitted",
+      message: "Try-on request submitted successfully. Processing will take up to 40 seconds."
+    });
+
   } catch (error) {
-    console.error("Try-on API error:", error)
-    return NextResponse.json({ error: "Failed to process try-on request" }, { status: 500 })
+    console.error("Try-on API error:", error);
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : "Failed to process try-on request" 
+    }, { status: 500 });
   }
 }

@@ -1,7 +1,26 @@
-// api/try-on/status/route.ts
+// Fixed status update logic in try-on/status/route.ts
+
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
+import { RequestStatus } from "@/generated/prisma";
+
+// Type for Fashn AI response
+interface FashnAIResponse {
+  id: string;
+  status: "starting" | "in_queue" | "processing" | "completed" | "failed";
+  output?: string[];
+  error?: string | null;
+}
+
+// Type for our database update
+interface TryOnUpdateData {
+  status?: RequestStatus;
+  resultImageUrl?: string;
+  errorMessage?: string;
+  processingTime?: number;
+  updatedAt: Date;
+}
 
 export async function GET(request: Request) {
   try {
@@ -12,7 +31,6 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const requestId = searchParams.get("requestId");
-    console.log('Request ID :', requestId)
 
     if (!requestId) {
       return NextResponse.json(
@@ -21,20 +39,11 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get user from database
-    const user = await db.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Get try-on request
+    // Get try-on request - ensure it belongs to the current user
     const tryOnRequest = await db.tryOnRequest.findFirst({
       where: {
         id: requestId,
-        userId: user.id,
+        userId,
       },
     });
 
@@ -79,38 +88,77 @@ export async function GET(request: Request) {
       );
     }
 
-    const statusData = await statusResponse.json();
+    const statusData: FashnAIResponse = await statusResponse.json();
     console.log("Fashn AI status:", statusData);
 
-    let updateData: any = {
+    // Prepare update data with proper typing
+    const updateData: TryOnUpdateData = {
       updatedAt: new Date(),
     };
 
     // Map Fashn AI status to our database status
-    if (statusData.status === "starting" || statusData.status === "in_queue") {
-      updateData.status = "PENDING";
-    } else if (statusData.status === "processing") {
-      updateData.status = "PROCESSING";
-    } else if (statusData.status === "completed") {
-      updateData.status = "COMPLETED";
-      // Extract image URL from output array
-      if (statusData.output && statusData.output.length > 0) {
-        updateData.resultImageUrl = statusData.output[0];
-      }
-      // Calculate processing time
-      const processingTime = Math.floor(
-        (new Date().getTime() - tryOnRequest.createdAt.getTime()) / 1000
-      );
-      updateData.processingTime = processingTime;
-    } else if (statusData.status === "failed") {
-      updateData.status = "FAILED";
-      updateData.errorMessage = statusData.error || "Processing failed";
+    switch (statusData.status) {
+      case "starting":
+      case "in_queue":
+        updateData.status = "PENDING";
+        break;
+
+      case "processing":
+        updateData.status = "PROCESSING";
+        break;
+
+      case "completed":
+        updateData.status = "COMPLETED";
+
+        // Extract image URL from output array
+        if (
+          statusData.output &&
+          Array.isArray(statusData.output) &&
+          statusData.output.length > 0
+        ) {
+          updateData.resultImageUrl = statusData.output[0];
+          console.log("Setting result image URL:", statusData.output[0]);
+        } else {
+          console.error(
+            "No output URL found in completed response:",
+            statusData
+          );
+          updateData.status = "FAILED";
+          updateData.errorMessage = "No result image URL returned";
+        }
+
+        // Calculate processing time
+        const processingTime = Math.floor(
+          (new Date().getTime() - tryOnRequest.createdAt.getTime()) / 1000
+        );
+        updateData.processingTime = processingTime;
+        console.log("Processing time calculated:", processingTime);
+        break;
+
+      case "failed":
+        updateData.status = "FAILED";
+        updateData.errorMessage = statusData.error || "Processing failed";
+        console.log("Processing failed:", statusData.error);
+        break;
+
+      default:
+        console.warn("Unknown status from Fashn AI:", statusData.status);
+        // Don't update status if we don't recognize it
+        break;
     }
+
+    console.log("Update data prepared:", updateData);
 
     // Update database
     const updatedRequest = await db.tryOnRequest.update({
       where: { id: requestId },
       data: updateData,
+    });
+
+    console.log("Database updated successfully:", {
+      id: updatedRequest.id,
+      status: updatedRequest.status,
+      resultImageUrl: updatedRequest.resultImageUrl,
     });
 
     return NextResponse.json({

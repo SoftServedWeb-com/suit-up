@@ -3,7 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // Get all try-on requests for the current user
-export async function POST(request: Request) {
+export async function GET(req:Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -21,8 +21,10 @@ export async function POST(request: Request) {
     const tryOnRequests = await db.tryOnRequest.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
-      take: 50, // Limit to recent 50 requests
+      take: 10, // Limit to recent 50 requests
     });
+
+    console.log("Get All requests success:", tryOnRequests);
 
     return NextResponse.json({ requests: tryOnRequests });
   } catch (error) {
