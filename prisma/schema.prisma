@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -13,6 +10,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
   id        String   @id @default(cuid())
   email     String?
@@ -22,6 +20,7 @@ model User {
 
   // Relations
   tryOnRequests TryOnRequest[]
+  subscription  Subscription? // Add the missing relation
 
   @@map("users")
 }
@@ -48,6 +47,7 @@ model TryOnRequest {
   
   // Metadata
   processingTime   Int?     // in seconds
+  creditsUsed      Int      @default(1) // Track credits used for this request
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -60,4 +60,45 @@ enum RequestStatus {
   COMPLETED  // Successfully completed
   FAILED     // Processing failed
   EXPIRED    // Took too long to complete
+}
+
+model Subscription {
+  id                       String           @id @default(cuid())
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  userId                   String           @unique
+  plan                     Plan             @default(FREE)
+  status                   SubStatus        @default(ACTIVE)
+  dodoCustomerId           String           @unique
+  currentPeriodStart       DateTime         @default(now())
+  currentPeriodEnd         DateTime
+  dodoSubscriptionId       String?
+  tryOnRemaining           Int?             @default(20) // Fixed spacing
+  tryOnPurchased           Int              @default(20)
+  
+  // Plan limits
+  maxTryOnsPerMonth        Int              @default(20)
+  hasUnlimitedTryOns       Boolean          @default(false)
+  
+  user                     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([plan])
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO  
+  PREMIUM
+}
+
+enum SubStatus {
+  ACTIVE
+  ACTIVE_CREDIT
+  PAST_DUE
+  UNPAID
+  CANCELED
+  TRIALING
 }
