@@ -1,7 +1,7 @@
 "use client";
 
+import { sswLogo } from "@/lib/logo";
 import { UserButton } from "@clerk/nextjs";
-import { Sparkles } from "lucide-react";
 
 export default function Header() {
   return (
@@ -10,12 +10,12 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-primary" />
+              <div className="h-10 w-10 flex items-center justify-center">
+                {sswLogo}
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-foreground">Fashion Try-On</h1>
-                <p className="text-xs text-muted-foreground">AI-Powered Virtual Fitting</p>
+                <h1 className="text-xl font-semibold text-foreground">Color-Swaap</h1>
+                <p className="text-xs text-muted-foreground">Immersive Fashion</p>
               </div>
             </div>
           </div>
