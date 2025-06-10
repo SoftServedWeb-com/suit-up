@@ -4,15 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build",
+    "build": "pnpm dlx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
-    
+    "postinstall": "pnpm dlx prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.21.0",
     "@prisma/client": "^6.9.0",
+    "@prisma/nextjs-monorepo-workaround-plugin": "^6.9.0",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
