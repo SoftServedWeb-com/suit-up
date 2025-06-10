@@ -5,13 +5,13 @@ import { NextResponse } from "next/server";
 // Get all try-on requests for the current user
 export async function POST(request: Request) {
   try {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const user = await db.user.findUnique({
-      where: { clerkId: clerkUserId },
+      where: { id:userId },
     });
 
     if (!user) {

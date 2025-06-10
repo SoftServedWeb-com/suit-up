@@ -5,13 +5,14 @@ import { db } from "@/db";
 
 export async function GET(request: Request) {
   try {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const requestId = searchParams.get("requestId");
+    console.log('Request ID :', requestId)
 
     if (!requestId) {
       return NextResponse.json(
@@ -22,7 +23,7 @@ export async function GET(request: Request) {
 
     // Get user from database
     const user = await db.user.findUnique({
-      where: { clerkId: clerkUserId },
+      where: { id: userId },
     });
 
     if (!user) {
