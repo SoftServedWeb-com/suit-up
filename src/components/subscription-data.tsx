@@ -196,11 +196,9 @@ export default function FloatingSubscriptionIndicator() {
             </div>
           </button>
         </PopoverTrigger>
-
         <PopoverContent
           side="top"
-
-          align="start"
+          align="end"
           className="w-80 glass-card border-border/50 p-3 "
           sideOffset={20}
         >

@@ -82,7 +82,7 @@ export default function ImageUpload({
                     Upload Image
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2">
-                    PNG, JPG up to 10MB
+                    PNG, JPG up to 4MB
                   </p>
                 </div>
               </div>

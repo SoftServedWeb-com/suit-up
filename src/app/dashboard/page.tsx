@@ -262,11 +262,24 @@ export default function Dashboard() {
     return null;
   };
 
-  const handleDownload = (imageUrl: string) => {
-    const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = `try-on-result-${Date.now()}.jpg`;
-    link.click();
+  const handleDownload = async (imageUrl: string) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `immersive-ssw-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Error downloading image:", error);
+    }
   };
 
   const handleShare = async (imageUrl: string) => {
@@ -369,7 +382,7 @@ export default function Dashboard() {
 
             {/* Latest Result Preview (Top Section) */}
             {completedRequests.length > 0 && (
-              <Accordion type="single" collapsible>
+              <Accordion type="single" collapsible >
                 <AccordionItem value="latest-result">
                   <AccordionTrigger className="w-full border border-muted/50 mb-2 glass-card  px-3">
                     <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
