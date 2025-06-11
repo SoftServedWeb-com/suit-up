@@ -54,7 +54,7 @@ export default function HistoryGrid({ history, onDelete }: HistoryGridProps) {
             <History className="h-5 w-5" />
             Try-On History
           </CardTitle>
-          <CardDescription>Your previous virtual try-on sessions</CardDescription>
+          <CardDescription>Your previous try-on sessions </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
@@ -81,7 +81,7 @@ export default function HistoryGrid({ history, onDelete }: HistoryGridProps) {
             {history.length}
           </Badge>
         </CardTitle>
-        <CardDescription>Your previous virtual try-on sessions</CardDescription>
+        <CardDescription>Your previous try-on sessions</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

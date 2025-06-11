@@ -13,6 +13,7 @@ export default async function Home() {
     return;
   }
   
+  
   return (
     <div className="min-h-screen bg-background pattern-bg">
       <SignedOut>
@@ -102,6 +103,7 @@ export default async function Home() {
           </div>
         </div>
       </SignedOut>
+
       <SignedIn>{redirect("/dashboard")}</SignedIn>
     </div>
   );

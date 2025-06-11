@@ -232,6 +232,7 @@ export default function ImprovedImageUpload({
               Avoid
             </h4>
             <ul className="space-y-1 text-muted-foreground">
+              <li>• Avoid including faces</li>
               <li>• Blurry or pixelated images</li>
               <li>• Multiple garments in one image</li>
               <li>• Images with text overlays</li>
