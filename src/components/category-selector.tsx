@@ -13,7 +13,7 @@ const categories = [
   { value: "auto", label: "Auto", description: "Automatically Detect based on garment" },
   { value: "tops", label: "Tops", description: "T-shirts, shirts, blouses" },
   { value: "bottoms", label: "Bottoms", description: "Pants, jeans, shorts" },
-  { value: "one-pieces", label: "One pieces", description: "Any singel garment to change" },
+  { value: "one-pieces", label: "One pieces", description: "Any single garment" },
 ];
 
 export default function CategorySelector({ value, onChange }: CategorySelectorProps) {
@@ -33,10 +33,10 @@ export default function CategorySelector({ value, onChange }: CategorySelectorPr
           <SelectTrigger className="w-full hover:border-primary/50 focus:border-primary">
             <SelectValue placeholder="Choose a category" />
           </SelectTrigger>
-          <SelectContent className="glass-card">
+          <SelectContent className="glass-card ">
             {categories.map((category) => (
-              <SelectItem key={category.value} value={category.value}>
-                <div className="flex flex-col">
+              <SelectItem key={category.value} value={category.value} >
+                <div className="flex flex-col items-start">
                   <span className="font-medium">{category.label}</span>
                   <span className="text-xs text-muted-foreground">{category.description}</span>
                 </div>

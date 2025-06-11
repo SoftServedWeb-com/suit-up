@@ -272,9 +272,9 @@ export default function Dashboard() {
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-2xl font-serif font-bold text-foreground ">Virtual Try-On Studio</h2>
+              <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground ">Immersive Studio</h2>
               <p className="text-muted-foreground">
-                Create stunning virtual try-ons with AI-powered technology
+                Create stunning virtual try-ons
               </p>
             </div>
             <TabsList className="glass-card">
