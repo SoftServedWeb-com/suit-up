@@ -44,7 +44,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model_image: modelImageBlob.url,
         garment_image: garmentImageBlob.url,
-        category: category === "outerwear" ? "tops" : category,
+        category: category ? category : "auto",
+        mode:"quality"
       }),
       headers: {
         Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
