@@ -10,10 +10,10 @@ interface CategorySelectorProps {
 }
 
 const categories = [
+  { value: "auto", label: "Auto", description: "Automatically Detect based on garment" },
   { value: "tops", label: "Tops", description: "T-shirts, shirts, blouses" },
   { value: "bottoms", label: "Bottoms", description: "Pants, jeans, shorts" },
-  { value: "dresses", label: "Dresses", description: "Casual and formal dresses" },
-  { value: "outerwear", label: "Outerwear", description: "Jackets, coats, sweaters" },
+  { value: "one-pieces", label: "One pieces", description: "Any singel garment to change" },
 ];
 
 export default function CategorySelector({ value, onChange }: CategorySelectorProps) {
