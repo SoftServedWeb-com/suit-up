@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         model_image: modelImageBlob.url,
         garment_image: garmentImageBlob.url,
         category: category ? category : "auto",
-        // mode:"quality"
+        mode:"quality"
       }),
       headers: {
         Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
