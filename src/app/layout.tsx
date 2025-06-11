@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { PLAN_LIMITS } from "@/lib/subscription";
+import {Toaster} from "sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,6 +94,7 @@ export default async function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} antialiased`}
         >
+          <Toaster richColors closeButton/>
           {children}
         </body>
       </html>
