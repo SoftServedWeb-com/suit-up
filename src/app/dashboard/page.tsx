@@ -1,15 +1,48 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, User, Shirt, Loader2, Clock, CheckCircle, XCircle, ZoomIn, Download, Share } from "lucide-react";
+import {
+  Sparkles,
+  User,
+  Shirt,
+  Loader2,
+  Clock,
+  CheckCircle,
+  XCircle,
+  X,
+  ZoomIn,
+  Download,
+  Share,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import ImageUpload from "@/components/image-upload";
 import CategorySelector from "@/components/category-selector";
+
 import Header from "@/components/page/header";
+import SubscriptionStatus from "@/components/subscription-data";
 
 interface TryOnRequest {
   id: string;
@@ -21,6 +54,7 @@ interface TryOnRequest {
   resultImageUrl?: string;
   errorMessage?: string;
   processingTime?: number;
+  creditsUsed?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -36,15 +70,22 @@ export default function Dashboard() {
   const [garmentImage, setGarmentImage] = useState<File | null>(null);
   const [category, setCategory] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Processing states
-  const [processingRequests, setProcessingRequests] = useState<ProcessingRequest[]>([]);
+  const [processingRequests, setProcessingRequests] = useState<
+    ProcessingRequest[]
+  >([]);
   const [allRequests, setAllRequests] = useState<TryOnRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Result modal state
   const [showResultModal, setShowResultModal] = useState(false);
   const [currentResult, setCurrentResult] = useState<TryOnRequest | null>(null);
+
+  // Subscription error state
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(
+    null
+  );
 
   // Load user's try-on history on component mount
   useEffect(() => {
@@ -55,11 +96,11 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       const response = await fetch("/api/try-on/status-history");
-      console.log("Get all Status Update :", response.status); 
-      
+      console.log("Get all Status Update :", response.status);
+
       if (response.ok) {
         const data = await response.json();
-        console.log("Get all Status Update Data :", JSON.stringify(data)); 
+        console.log("Get all Status Update Data :", JSON.stringify(data));
         setAllRequests(data.requests);
       } else {
         console.error("Failed to load history:", response.statusText);
@@ -78,6 +119,7 @@ export default function Dashboard() {
     }
 
     setIsSubmitting(true);
+    setSubscriptionError(null);
 
     try {
       const formData = new FormData();
@@ -85,32 +127,38 @@ export default function Dashboard() {
       formData.append("garmentImage", garmentImage);
       formData.append("category", category);
 
-      console.log("Get Request Data :", JSON.stringify(formData)); 
+      console.log("Submitting try-on request...");
 
       const response = await fetch("/api/try-on", {
         method: "POST",
         body: formData,
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to submit try-on request");
-      }
 
       const data = await response.json();
-      console.log("Get Request Data : ", JSON.stringify(data)); 
+
+      if (!response.ok) {
+        // Handle subscription-related errors
+        if (data.type === "SUBSCRIPTION_LIMIT") {
+          setSubscriptionError(data.error);
+          return;
+        }
+        throw new Error(data.error || "Failed to submit try-on request");
+      }
+
+      console.log("Request submitted successfully:", data);
 
       // Add to processing queue
       const newProcessingRequest: ProcessingRequest = {
         requestId: data.requestId,
         status: "submitted",
-        startTime: Date.now()
+        startTime: Date.now(),
       };
-      
-      setProcessingRequests(prev => [...prev, newProcessingRequest]);
-      
+
+      setProcessingRequests((prev) => [...prev, newProcessingRequest]);
+
       // Start polling for this request
       startPolling(data.requestId);
-      
+
       // Clear form
       setModelImage(null);
       setGarmentImage(null);
@@ -118,30 +166,35 @@ export default function Dashboard() {
 
       // Reload history to include the new request
       loadTryOnHistory();
-
     } catch (error) {
       console.error("Error:", error);
-      alert("Failed to submit try-on request. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to submit try-on request. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const startPolling = (requestId: string) => {
-    console.log("Request ID : ", requestId)
+    console.log("Request ID : ", requestId);
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/try-on/status?requestId=${requestId}`);
-        
+        const response = await fetch(
+          `/api/try-on/status?requestId=${requestId}`
+        );
+
         if (response.ok) {
           const data = await response.json();
-          
+
           console.log("Polling status:", data.status);
-          
+
           // Update processing request status
-          setProcessingRequests(prev => 
-            prev.map(req => 
-              req.requestId === requestId 
+          setProcessingRequests((prev) =>
+            prev.map((req) =>
+              req.requestId === requestId
                 ? { ...req, status: data.status }
                 : req
             )
@@ -150,15 +203,15 @@ export default function Dashboard() {
           // If completed or failed, stop polling and update results
           if (data.status === "COMPLETED" || data.status === "FAILED") {
             clearInterval(pollInterval);
-            
+
             // Remove from processing queue
-            setProcessingRequests(prev => 
-              prev.filter(req => req.requestId !== requestId)
+            setProcessingRequests((prev) =>
+              prev.filter((req) => req.requestId !== requestId)
             );
-            
+
             // Reload history to get updated data
             await loadTryOnHistory();
-            
+
             // Show result modal if completed successfully
             if (data.status === "COMPLETED" && data.resultImageUrl) {
               const completedRequest = await getRequestById(requestId);
@@ -179,25 +232,27 @@ export default function Dashboard() {
     // Stop polling after 3 minutes (safety measure)
     setTimeout(() => {
       clearInterval(pollInterval);
-      setProcessingRequests(prev => 
-        prev.filter(req => req.requestId !== requestId)
+      setProcessingRequests((prev) =>
+        prev.filter((req) => req.requestId !== requestId)
       );
     }, 180000);
   };
 
-  const getRequestById = async (requestId: string): Promise<TryOnRequest | null> => {
+  const getRequestById = async (
+    requestId: string
+  ): Promise<TryOnRequest | null> => {
     try {
       const response = await fetch(`/api/try-on/status?requestId=${requestId}`);
       if (response.ok) {
         const data = await response.json();
         // Find the request in our local state or reconstruct it
-        const request = allRequests.find(req => req.id === requestId);
+        const request = allRequests.find((req) => req.id === requestId);
         if (request && data.resultImageUrl) {
           return {
             ...request,
             status: "COMPLETED",
             resultImageUrl: data.resultImageUrl,
-            processingTime: data.processingTime
+            processingTime: data.processingTime,
           };
         }
       }
@@ -261,130 +316,177 @@ export default function Dashboard() {
     }
   };
 
-  const completedRequests = allRequests.filter(req => req.status === "COMPLETED");
-  const isReadyToGenerate = modelImage && garmentImage && category && !isSubmitting;
+  const completedRequests = allRequests.filter(
+    (req) => req.status === "COMPLETED"
+  );
+  const isReadyToGenerate =
+    modelImage && garmentImage && category && !isSubmitting;
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground ">Immersive Studio</h2>
+              <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground ">
+                Immersive Studio
+              </h2>
               <p className="text-muted-foreground">
                 Create stunning virtual try-ons
               </p>
             </div>
             <TabsList className="glass-card">
-              <TabsTrigger value="try-on" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger
+                value="try-on"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 Try-On
               </TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <TabsTrigger
+                value="history"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 History ({allRequests.length})
               </TabsTrigger>
             </TabsList>
           </div>
 
           <TabsContent value="try-on" className="space-y-8">
+            {/* Subscription Status */}
+            <SubscriptionStatus />
+
+            {/* Subscription Error Alert */}
+            {subscriptionError && (
+              <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
+                <AlertTriangle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-700 dark:text-red-300">
+                  {subscriptionError}
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Latest Result Preview (Top Section) */}
             {completedRequests.length > 0 && (
-              <Card className="glass-card border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <CheckCircle className="h-5 w-5" />
-                    Latest Result
-                  </CardTitle>
-                  <CardDescription>Your most recent try-on result</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                    {/* Input Images */}
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Original</p>
-                        <img
-                          src={completedRequests[0].modelImageUrl}
-                          alt="Model"
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">Garment</p>
-                        <img
-                          src={completedRequests[0].garmentImageUrl}
-                          alt="Garment"
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
-                        />
-                      </div>
+              <Accordion type="single" collapsible>
+                <AccordionItem value="latest-result">
+                  <AccordionTrigger className="w-full border border-muted/50 mb-2 glass-card  px-3">
+                    <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+                      <CheckCircle className="h-5 w-5" />
+                      Latest Result
                     </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <Card className="glass-card border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20">
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                          {/* Input Images */}
+                          <div className="space-y-4">
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-muted-foreground mb-2">
+                                Original
+                              </p>
+                              <img
+                                src={completedRequests[0].modelImageUrl}
+                                alt="Model"
+                                className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
+                              />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm font-medium text-muted-foreground mb-2">
+                                Garment
+                              </p>
+                              <img
+                                src={completedRequests[0].garmentImageUrl}
+                                alt="Garment"
+                                className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
+                              />
+                            </div>
+                          </div>
 
-                    {/* Result Image */}
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">Result</p>
-                      <div className="relative group cursor-pointer" onClick={() => {
-                        setCurrentResult(completedRequests[0]);
-                        setShowResultModal(true);
-                      }}>
-                        <img
-                          src={completedRequests[0].resultImageUrl!}
-                          alt="Try-on result"
-                          className="w-full max-w-48 mx-auto rounded-lg shadow-lg border-2 border-primary/20 group-hover:border-primary/50 transition-all duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="bg-white/90 rounded-full p-2">
-                            <ZoomIn className="h-5 w-5 text-gray-800" />
+                          {/* Result Image */}
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-muted-foreground mb-2">
+                              Result
+                            </p>
+                            <div
+                              className="relative group cursor-pointer"
+                              onClick={() => {
+                                setCurrentResult(completedRequests[0]);
+                                setShowResultModal(true);
+                              }}
+                            >
+                              <img
+                                src={completedRequests[0].resultImageUrl!}
+                                alt="Try-on result"
+                                className="w-full max-w-48 mx-auto rounded-lg shadow-lg border-2 border-primary/20 group-hover:border-primary/50 transition-all duration-300 group-hover:scale-105"
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                <div className="bg-white/90 rounded-full p-2">
+                                  <ZoomIn className="h-5 w-5 text-gray-800" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="space-y-3">
+                            <div className="text-center mb-4">
+                              <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                ✨ Completed
+                              </Badge>
+                              {completedRequests[0].processingTime && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Processed in {completedRequests[0].processingTime}s
+                                </p>
+                              )}
+                              {completedRequests[0].creditsUsed && (
+                                <p className="text-xs text-muted-foreground">
+                                  Credits used: {completedRequests[0].creditsUsed}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handleDownload(completedRequests[0].resultImageUrl!)
+                                }
+                                className="bg-primary hover:bg-primary/90"
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  handleShare(completedRequests[0].resultImageUrl!)
+                                }
+                              >
+                                <Share className="h-4 w-4 mr-2" />
+                                Share
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setCurrentResult(completedRequests[0]);
+                                  setShowResultModal(true);
+                                }}
+                              >
+                                <ZoomIn className="h-4 w-4 mr-2" />
+                                View Full
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-3">
-                      <div className="text-center mb-4">
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          ✨ Completed
-                        </Badge>
-                        {completedRequests[0].processingTime && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Processed in {completedRequests[0].processingTime}s
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleDownload(completedRequests[0].resultImageUrl!)}
-                          className="bg-primary hover:bg-primary/90"
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleShare(completedRequests[0].resultImageUrl!)}
-                        >
-                          <Share className="h-4 w-4 mr-2" />
-                          Share
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setCurrentResult(completedRequests[0]);
-                            setShowResultModal(true);
-                          }}
-                        >
-                          <ZoomIn className="h-4 w-4 mr-2" />
-                          View Full
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             )}
 
             {/* Processing Queue */}
@@ -396,19 +498,27 @@ export default function Dashboard() {
                     Processing Requests
                   </CardTitle>
                   <CardDescription>
-                    Your try-on requests are being processed by AI. This usually takes 20-40 seconds.
+                    Your try-on requests are being processed by AI. This usually
+                    takes 20-40 seconds.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {processingRequests.map((req) => (
-                      <div key={req.requestId} className="flex items-center justify-between p-3 bg-primary/5 rounded-lg">
+                      <div
+                        key={req.requestId}
+                        className="flex items-center justify-between p-3 bg-primary/5 rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
                           {getStatusIcon(req.status)}
                           <span className="font-medium">
-                            {req.status === "submitted" ? "Submitted to AI" : 
-                             req.status === "PENDING" ? "In Queue" : 
-                             req.status === "PROCESSING" ? "Generating..." : req.status}
+                            {req.status === "submitted"
+                              ? "Submitted to AI"
+                              : req.status === "PENDING"
+                              ? "In Queue"
+                              : req.status === "PROCESSING"
+                              ? "Generating..."
+                              : req.status}
                           </span>
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -457,7 +567,11 @@ export default function Dashboard() {
                 className={`
                   relative overflow-hidden bg-primary hover:bg-primary/90 text-primary-foreground
                   px-8 py-3 rounded-xl font-semibold transition-all duration-300
-                  ${isReadyToGenerate ? 'hover:scale-105 hover:shadow-lg' : 'opacity-50 cursor-not-allowed'}
+                  ${
+                    isReadyToGenerate
+                      ? "hover:scale-105 hover:shadow-lg"
+                      : "opacity-50 cursor-not-allowed"
+                  }
                 `}
               >
                 {isSubmitting ? (
@@ -491,14 +605,18 @@ export default function Dashboard() {
                 {isLoading ? (
                   <div className="text-center py-12">
                     <Loader2 className="h-8 w-8 text-muted-foreground mx-auto animate-spin mb-4" />
-                    <p className="text-muted-foreground">Loading your try-on history...</p>
+                    <p className="text-muted-foreground">
+                      Loading your try-on history...
+                    </p>
                   </div>
                 ) : allRequests.length === 0 ? (
                   <div className="text-center py-12">
                     <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                       <Sparkles className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-medium text-foreground mb-2">No try-ons yet</h3>
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      No try-ons yet
+                    </h3>
                     <p className="text-muted-foreground">
                       Start by creating your first virtual try-on session!
                     </p>
@@ -506,11 +624,14 @@ export default function Dashboard() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {allRequests.map((request) => (
-                      <Card 
-                        key={request.id} 
+                      <Card
+                        key={request.id}
                         className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
                         onClick={() => {
-                          if (request.status === "COMPLETED" && request.resultImageUrl) {
+                          if (
+                            request.status === "COMPLETED" &&
+                            request.resultImageUrl
+                          ) {
                             setCurrentResult(request);
                             setShowResultModal(true);
                           }
@@ -518,7 +639,8 @@ export default function Dashboard() {
                       >
                         <CardContent className="p-0">
                           <div className="relative">
-                            {request.status === "COMPLETED" && request.resultImageUrl ? (
+                            {request.status === "COMPLETED" &&
+                            request.resultImageUrl ? (
                               <img
                                 src={request.resultImageUrl}
                                 alt="Try-on result"
@@ -532,17 +654,21 @@ export default function Dashboard() {
                                 </span>
                               </div>
                             )}
-                            
+
                             <div className="p-4 space-y-3">
                               <div className="flex justify-between items-start">
-                                <Badge className={getStatusColor(request.status)}>
+                                <Badge
+                                  className={getStatusColor(request.status)}
+                                >
                                   {request.status}
                                 </Badge>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(request.createdAt).toLocaleDateString()}
+                                  {new Date(
+                                    request.createdAt
+                                  ).toLocaleDateString()}
                                 </span>
                               </div>
-                              
+
                               <div className="flex gap-2">
                                 <img
                                   src={request.modelImageUrl}
@@ -555,12 +681,15 @@ export default function Dashboard() {
                                   className="w-12 h-12 object-cover rounded border-2 border-border"
                                 />
                               </div>
-                              
-                              {request.processingTime && (
-                                <p className="text-xs text-muted-foreground">
-                                  Processed in {request.processingTime}s
-                                </p>
-                              )}
+
+                              <div className="text-xs text-muted-foreground space-y-1">
+                                {request.processingTime && (
+                                  <p>Processed in {request.processingTime}s</p>
+                                )}
+                                {request.creditsUsed && (
+                                  <p>Credits used: {request.creditsUsed}</p>
+                                )}
+                              </div>
 
                               {request.errorMessage && (
                                 <p className="text-xs text-red-500">
@@ -642,12 +771,17 @@ export default function Dashboard() {
               </div>
 
               {/* Metadata */}
-              <div className="text-center text-sm text-muted-foreground">
+              <div className="text-center text-sm text-muted-foreground space-y-1">
                 <p>Category: {currentResult.category}</p>
                 {currentResult.processingTime && (
                   <p>Processing time: {currentResult.processingTime} seconds</p>
                 )}
-                <p>Created: {new Date(currentResult.createdAt).toLocaleString()}</p>
+                {currentResult.creditsUsed && (
+                  <p>Credits used: {currentResult.creditsUsed}</p>
+                )}
+                <p>
+                  Created: {new Date(currentResult.createdAt).toLocaleString()}
+                </p>
               </div>
             </div>
           )}

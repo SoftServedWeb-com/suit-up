@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
+import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +11,16 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Check subscription limits before processing
+    const canCreate = await checkCanCreateTryOn(userId);
+    if (!canCreate.canCreate) {
+        return NextResponse.json({ 
+          error: canCreate.reason,
+          type: "SUBSCRIPTION_LIMIT",
+          remaining: canCreate.remaining || 0
+        }, { status: 403 });
+      }
 
     const formData = await request.formData();
     const modelImageFile = formData.get("modelImage") as File;
@@ -45,7 +56,7 @@ export async function POST(request: Request) {
         model_image: modelImageBlob.url,
         garment_image: garmentImageBlob.url,
         category: category ? category : "auto",
-        mode:"quality"
+        // mode:"quality"
       }),
       headers: {
         Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
@@ -66,6 +77,13 @@ export async function POST(request: Request) {
       throw new Error("No prediction ID returned from Fashn.ai API");
     }
 
+       // Consume try-on credit (only after successful submission to Fashn AI)
+       const creditResult = await consumeTryOnCredit(userId);
+       if (!creditResult.success) {
+         throw new Error(creditResult.error || "Failed to consume credit");
+       }
+   
+
     console.log("Fashn AI prediction started:", predictionId);
 
     // Save to database
@@ -76,7 +94,8 @@ export async function POST(request: Request) {
         modelImageUrl: modelImageBlob.url,
         garmentImageUrl: garmentImageBlob.url,
         category,
-        status: "PENDING"
+        status: "PENDING",
+        creditsUsed: 1
       }
     });
 
@@ -85,11 +104,21 @@ export async function POST(request: Request) {
       requestId: tryOnRequest.id,
       predictionId,
       status: "submitted",
-      message: "Try-on request submitted successfully. Processing will take up to 40 seconds."
+      message: "Try-on request submitted successfully. Processing will take up to 40 seconds.",
+      creditsRemaining: creditResult.remaining
     });
 
   } catch (error) {
     console.error("Try-on API error:", error);
+    
+    // Return specific error types for better frontend handling
+    if (error instanceof Error && error.message.includes("credit")) {
+      return NextResponse.json({ 
+        error: error.message,
+        type: "SUBSCRIPTION_LIMIT"
+      }, { status: 403 });
+    }
+    
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : "Failed to process try-on request" 
     }, { status: 500 });

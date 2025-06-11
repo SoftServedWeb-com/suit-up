@@ -1,6 +1,4 @@
 "use client";
-
-import { sswLogo } from "@/lib/logo";
 import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 
@@ -12,27 +10,22 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
               <div className="h-15 w-15 flex items-center justify-center">
-                {/* {sswLogo} */}
-                <Image 
+                <Image
                   src="/ssw_logo.svg"
                   height={1080}
                   width={1080}
                   alt="SSW Logo"
-                  />
+                />
               </div>
-              {/* <div>
-                <h1 className="text-xl font-semibold text-foreground">Color-Swaap</h1>
-                <p className="text-xs text-muted-foreground">Immersive Fashion</p>
-              </div> */}
             </div>
           </div>
-          <UserButton 
+          <UserButton
             afterSignOutUrl="/"
             appearance={{
               elements: {
                 avatarBox: "h-10 w-10",
                 userButtonPopoverCard: "glass-card",
-              }
+              },
             }}
           />
         </div>

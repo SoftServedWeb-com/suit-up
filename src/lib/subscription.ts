@@ -10,9 +10,9 @@ export interface SubscriptionLimits {
 
 export const PLAN_LIMITS: Record<Plan, SubscriptionLimits> = {
   FREE: {
-    maxTryOnsPerMonth: 5,
+    maxTryOnsPerMonth: 20,
     hasUnlimitedTryOns: false,
-    features: ["5 try-ons per month", "Basic support"]
+    features: ["20 try-ons per month", "Basic support"]
   },
   BASIC: {
     maxTryOnsPerMonth: 50,
