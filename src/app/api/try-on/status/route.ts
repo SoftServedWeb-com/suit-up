@@ -1,9 +1,22 @@
-// Fixed status update logic in try-on/status/route.ts
+// Updated try-on/status/route.ts with S3 upload functionality
 
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { RequestStatus } from "@/generated/prisma";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import crypto from "crypto";
+
+// Initialize S3 client
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
+
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME!;
 
 // Type for Fashn AI response
 interface FashnAIResponse {
@@ -20,6 +33,49 @@ interface TryOnUpdateData {
   errorMessage?: string;
   processingTime?: number;
   updatedAt: Date;
+}
+
+// Helper function to download image from URL and upload to S3
+async function downloadAndUploadToS3(imageUrl: string, requestId: string): Promise<string> {
+  try {
+    console.log(`Downloading image from: ${imageUrl}`);
+    
+    // Download the image from Fashn AI
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to download image: ${response.status} ${response.statusText}`);
+    }
+
+    const imageBuffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    
+    // Generate a unique filename
+    const fileExtension = contentType.includes('png') ? 'png' : 'jpg';
+    const fileName = `results/tryon-result-${requestId}-${Date.now()}-${crypto.randomUUID()}.${fileExtension}`;
+    
+    console.log(`Uploading to S3 as: ${fileName}`);
+    
+    // Upload to S3
+    const uploadParams = {
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: imageBuffer,
+      ContentType: contentType,
+      // Make the object publicly readable if your bucket allows it
+      // ACL: 'public-read', // Uncomment if you want public access
+    };
+
+    await s3Client.send(new PutObjectCommand(uploadParams));
+    
+    // Return the S3 URL
+    const s3Url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
+    console.log(`Successfully uploaded to S3: ${s3Url}`);
+    
+    return s3Url;
+  } catch (error) {
+    console.error("Error downloading and uploading image:", error);
+    throw new Error(`Failed to process result image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
 }
 
 export async function GET(request: Request) {
@@ -108,36 +164,47 @@ export async function GET(request: Request) {
         break;
 
       case "completed":
-        updateData.status = "COMPLETED";
-
         // Extract image URL from output array
         if (
           statusData.output &&
           Array.isArray(statusData.output) &&
           statusData.output.length > 0
         ) {
-          updateData.resultImageUrl = statusData.output[0];
-          console.log("Setting result image URL:", statusData.output[0]);
+          const fashnImageUrl = statusData.output[0];
+          console.log("Fashn AI result URL:", fashnImageUrl);
+          
+          try {
+            // Download from Fashn AI and upload to our S3
+            const s3ImageUrl = await downloadAndUploadToS3(fashnImageUrl, requestId);
+            
+            updateData.status = "COMPLETED";
+            updateData.resultImageUrl = s3ImageUrl;
+            
+            // Calculate processing time
+            const processingTime = Math.floor(
+              (new Date().getTime() - tryOnRequest.createdAt.getTime()) / 1000
+            );
+            updateData.processingTime = processingTime;
+            console.log("Processing time calculated:", processingTime);
+            
+          } catch (uploadError) {
+            console.error("Failed to upload result to S3:", uploadError);
+            updateData.status = "FAILED";
+            updateData.errorMessage = `Failed to save result: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`;
+          }
         } else {
           console.error(
             "No output URL found in completed response:",
             statusData
           );
           updateData.status = "FAILED";
-          updateData.errorMessage = "No result image URL returned";
+          updateData.errorMessage = "No result image URL returned from AI service";
         }
-
-        // Calculate processing time
-        const processingTime = Math.floor(
-          (new Date().getTime() - tryOnRequest.createdAt.getTime()) / 1000
-        );
-        updateData.processingTime = processingTime;
-        console.log("Processing time calculated:", processingTime);
         break;
 
       case "failed":
         updateData.status = "FAILED";
-        updateData.errorMessage = statusData.error || "Processing failed";
+        updateData.errorMessage = statusData.error || "AI processing failed";
         console.log("Processing failed:", statusData.error);
         break;
 
@@ -149,30 +216,43 @@ export async function GET(request: Request) {
 
     console.log("Update data prepared:", updateData);
 
-    // Update database
-    const updatedRequest = await db.tryOnRequest.update({
-      where: { id: requestId },
-      data: updateData,
-    });
+    // Update database only if we have status changes
+    if (updateData.status) {
+      const updatedRequest = await db.tryOnRequest.update({
+        where: { id: requestId },
+        data: updateData,
+      });
 
-    console.log("Database updated successfully:", {
-      id: updatedRequest.id,
-      status: updatedRequest.status,
-      resultImageUrl: updatedRequest.resultImageUrl,
-    });
+      console.log("Database updated successfully:", {
+        id: updatedRequest.id,
+        status: updatedRequest.status,
+        resultImageUrl: updatedRequest.resultImageUrl,
+      });
 
+      return NextResponse.json({
+        requestId: updatedRequest.id,
+        status: updatedRequest.status,
+        resultImageUrl: updatedRequest.resultImageUrl,
+        errorMessage: updatedRequest.errorMessage,
+        processingTime: updatedRequest.processingTime,
+      });
+    }
+
+    // If no status update needed, return current status
     return NextResponse.json({
-      requestId: updatedRequest.id,
-      status: updatedRequest.status,
-      resultImageUrl: updatedRequest.resultImageUrl,
-      errorMessage: updatedRequest.errorMessage,
-      processingTime: updatedRequest.processingTime,
+      requestId: tryOnRequest.id,
+      status: tryOnRequest.status,
+      resultImageUrl: tryOnRequest.resultImageUrl,
+      errorMessage: tryOnRequest.errorMessage,
+      processingTime: tryOnRequest.processingTime,
     });
+
   } catch (error) {
     console.error("Status check error:", error);
     return NextResponse.json(
       {
         error: "Failed to check status",
+        details: error instanceof Error ? error.message : "Unknown error"
       },
       { status: 500 }
     );
