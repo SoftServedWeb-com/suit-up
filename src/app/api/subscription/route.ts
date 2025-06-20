@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const subscription = await getOrCreateSubscription(userId);
-
+    console.log("Subscription API response:", subscription);
     return NextResponse.json({
       subscription: {
         id: subscription.id,

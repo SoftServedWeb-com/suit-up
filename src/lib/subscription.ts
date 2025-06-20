@@ -6,29 +6,39 @@ export interface SubscriptionLimits {
   maxTryOnsPerMonth: number;
   hasUnlimitedTryOns: boolean;
   features: string[];
+  dodoProductId?: string;
+  price: number; // Price in paise (for INR) or cents (for USD)
 }
 
 export const PLAN_LIMITS: Record<Plan, SubscriptionLimits> = {
   FREE: {
     maxTryOnsPerMonth: 20,
     hasUnlimitedTryOns: false,
-    features: ["20 try-ons per month", "Basic support"]
+    features: ["20 try-ons", "Standard processing", "Basic quality", "Community support"],
+    price: 0
   },
   BASIC: {
-    maxTryOnsPerMonth: 50,
+    maxTryOnsPerMonth: 100,
     hasUnlimitedTryOns: false,
-    features: ["50 try-ons per month", "Priority support", "High-quality results"]
+    features: ["100 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
+    dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
+    price: 100000 // ₹2000 in paise
   },
   PRO: {
-    maxTryOnsPerMonth: 200,
+    maxTryOnsPerMonth: 300,
     hasUnlimitedTryOns: false,
-    features: ["200 try-ons per month", "Priority support", "Commercial usage", "API access"]
+    features: ["300 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
+    dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
+    price: 200000 // ₹2000 in paise
   },
   PREMIUM: {
-    maxTryOnsPerMonth: 0, // Unlimited
-    hasUnlimitedTryOns: true,
-    features: ["Unlimited try-ons", "Priority support", "Commercial usage", "API access", "Custom integrations"]
-  }
+    maxTryOnsPerMonth: 500,
+    hasUnlimitedTryOns: false,
+    features: ["500 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
+    dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
+    price: 300000 // ₹2000 in paise
+  },
+
 };
 
 export async function getOrCreateSubscription(userId: string) {
@@ -73,11 +83,13 @@ export async function checkCanCreateTryOn(userId: string): Promise<{
   if (!["ACTIVE", "ACTIVE_CREDIT", "TRIALING"].includes(subscription.status)) {
     return {
       canCreate: false,
-      reason: "Subscription is not active. Please update your payment method."
+      reason: subscription.plan === "FREE" 
+        ? "Please upgrade to Pro plan to continue using try-ons."
+        : "Subscription is not active. Please update your payment method."
     };
   }
 
-  // Check if plan has unlimited try-ons
+  // Check if plan has unlimited try-ons (none of our current plans do, but keeping for future)
   if (subscription.hasUnlimitedTryOns) {
     return { canCreate: true };
   }
@@ -86,7 +98,9 @@ export async function checkCanCreateTryOn(userId: string): Promise<{
   if (!subscription.tryOnRemaining || subscription.tryOnRemaining <= 0) {
     return {
       canCreate: false,
-      reason: "No try-on credits remaining. Please upgrade your plan or wait for next billing cycle.",
+      reason: subscription.plan === "FREE"
+        ? `You've used all your free try-ons for this month. Upgrade to Pro for 300 try-ons per month!`
+        : "No try-on credits remaining. Your credits will reset on your next billing cycle.",
       remaining: 0
     };
   }
@@ -113,14 +127,17 @@ export async function consumeTryOnCredit(userId: string): Promise<{
     if (!subscription.tryOnRemaining || subscription.tryOnRemaining <= 0) {
       return {
         success: false,
-        error: "No try-on credits remaining"
+        error: subscription.plan === "FREE"
+          ? "No free try-ons remaining. Please upgrade to Pro."
+          : "No try-on credits remaining"
       };
     }
 
     const updatedSubscription = await db.subscription.update({
       where: { userId },
       data: {
-        tryOnRemaining: subscription.tryOnRemaining - 1
+        tryOnRemaining: subscription.tryOnRemaining - 1,
+        updatedAt: new Date()
       }
     });
 
@@ -147,7 +164,8 @@ export async function resetMonthlyCredits(userId: string) {
       tryOnRemaining: planLimits.maxTryOnsPerMonth,
       tryOnPurchased: planLimits.maxTryOnsPerMonth,
       currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+      currentPeriodEnd: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
+      updatedAt: new Date()
     }
   });
 }
@@ -172,4 +190,31 @@ export function getStatusDisplayName(status: SubStatus): string {
     TRIALING: "Trial"
   };
   return names[status];
+}
+
+// Helper function to create checkout sessions for upgrades
+export async function createUpgradeCheckoutUrl(userId: string, plan: Plan): Promise<string> {
+  const planConfig = PLAN_LIMITS[plan];
+  
+  if (!planConfig.dodoProductId) {
+    throw new Error(`Product ID not configured for plan: ${plan}`);
+  }
+
+  // You'll need to implement this based on Dodo Payments checkout API
+  // This is a placeholder that you should replace with actual Dodo Payments integration
+  const checkoutData = {
+    product_id: planConfig.dodoProductId,
+    customer_metadata: {
+      user_id: userId,
+      plan: plan
+    },
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?success=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/billing?cancelled=true`
+  };
+
+  // Replace this with actual Dodo Payments checkout creation
+  // const checkout = await dodopayments.checkout.create(checkoutData);
+  // return checkout.url;
+  
+  return "#"; // Placeholder
 }

@@ -9,4 +9,6 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
+  // Exclude specific paths
+  exclude: ['/api/billing/checkout/subscription'],
 }
