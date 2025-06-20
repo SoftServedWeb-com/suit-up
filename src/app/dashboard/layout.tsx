@@ -2,7 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { PLAN_LIMITS } from "@/lib/subscription";
 
-export default async function RootLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -64,8 +64,6 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en">
-      <body>{children}</body>
-    </html>
+    <div>{children}</div>
   );
 }

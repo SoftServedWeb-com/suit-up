@@ -287,12 +287,6 @@ export default function FloatingSubscriptionIndicator() {
 
             {/* Action Buttons */}
             <div className="flex gap-2 pt-2">
-              {subscription.plan === "FREE" && (
-                <Button size="sm" className="flex-1 text-xs">
-                  Upgrade Plan
-                </Button>
-              )}
-
               {(subscription.tryOnRemaining || 0) < 5 &&
                 !subscription.hasUnlimitedTryOns && (
                   <Button
