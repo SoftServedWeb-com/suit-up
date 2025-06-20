@@ -104,7 +104,7 @@ import {
               <a href="#testimonials" className="text-gray-600 hover:text-indigo-600 transition-colors text-sm font-medium">Reviews</a>
               <SignInButton mode="modal">
                 <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
-                  Get Started
+                  Dashboard
                 </button>
               </SignInButton>
             </div>

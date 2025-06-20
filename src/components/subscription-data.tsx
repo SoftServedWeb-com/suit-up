@@ -11,13 +11,15 @@ import {
   Settings,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SubscriptionData {
   id: string;
@@ -284,7 +286,7 @@ export default function FloatingSubscriptionIndicator() {
               )}
 
             {/* Action Buttons */}
-            {/* <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2">
               {subscription.plan === "FREE" && (
                 <Button size="sm" className="flex-1 text-xs">
                   Upgrade Plan
@@ -302,11 +304,15 @@ export default function FloatingSubscriptionIndicator() {
                   </Button>
                 )}
 
-              <Button variant="outline" size="sm" className="text-xs">
+              <Link
+                href={"/billing"}
+              className={cn("text-xs", buttonVariants
+                ({"variant":"outline"})
+              )}>
                 <Settings className="h-3 w-3 mr-1" />
                 Manage
-              </Button>
-            </div> */}
+              </Link>
+            </div>
           </div>
         </PopoverContent>
       </Popover>

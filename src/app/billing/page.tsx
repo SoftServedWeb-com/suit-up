@@ -15,8 +15,9 @@ import {
   RefreshCw,
   FileText,
   X,
+  ArrowLeft,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -41,6 +42,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import Header from "@/components/page/header";
 import { toast } from "sonner";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface SubscriptionData {
   id: string;
@@ -319,14 +322,22 @@ export default function BillingPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-8">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground">
-                Billing & Usage
-              </h2>
-              <p className="text-muted-foreground">
-                Manage your subscription and view usage statistics
-              </p>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Link
+                href={"/dashboard"}
+                onClick={() => window.history.back()}
+                className={cn(buttonVariants({"variant":"outline"}))}>
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+              <div className="space-y-1">
+                <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground">
+                  Billing & Usage
+                </h2>
+                <p className="text-muted-foreground">
+                  Manage your subscription and view usage statistics
+                </p>
+              </div>
             </div>
             <TabsList className="glass-card">
               <TabsTrigger
@@ -339,7 +350,7 @@ export default function BillingPage() {
                 value="history"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                History ({paymentHistory.length})
+                Billing History ({paymentHistory.length})
               </TabsTrigger>
             </TabsList>
           </div>

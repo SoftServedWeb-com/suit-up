@@ -3,8 +3,7 @@ import { UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Home, CreditCard, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Home, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
@@ -30,76 +29,20 @@ export default function Header() {
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 flex items-center justify-center">
+              <div className=" flex items-center justify-center">
                 <Image
                   src="/ssw_logo.svg"
                   height={40}
                   width={40}
                   alt="SSW Logo"
-                  className="h-8 w-8"
+                  className="h-15 w-15"
                 />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-serif font-medium text-foreground">
-                  Fashion Try-On
-                </h1>
               </div>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "flex items-center gap-2 transition-all duration-200",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.name}
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Mobile Navigation */}
-          <nav className="md:hidden flex items-center space-x-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              
-              return (
-                <Link key={item.name} href={item.href}>
-                  <Button
-                    variant={isActive ? "default" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "flex items-center gap-1 px-2",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span className="sr-only sm:not-sr-only text-xs">
-                      {item.name}
-                    </span>
-                  </Button>
-                </Link>
-              );
-            })}
-          </nav>
+          
+ 
 
           {/* User Button */}
           <div className="flex items-center space-x-4">

@@ -4,19 +4,13 @@ import {
   SignInButton
 } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
 import { Sparkles, ArrowRight, Zap, Palette, Camera } from "lucide-react";
 
 export default async function Home() {
-  const { userId } = await auth();
-  if (!userId) {
-    return;
-  }
-  
   
   return (
     <div className="min-h-screen bg-background pattern-bg">
-      <SignedOut>
+      {/* <SignedOut> */}
         <div className="relative overflow-hidden">
           {/* Hero Section */}
           <div className="relative px-6 lg:px-8">
@@ -46,7 +40,7 @@ export default async function Home() {
                 <div className="mt-10 flex items-center justify-center gap-x-6">
                   <SignInButton mode="modal">
                     <button className="group relative bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
-                      Get Started
+                      Dashboard
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </SignInButton>
@@ -102,9 +96,9 @@ export default async function Home() {
             />
           </div>
         </div>
-      </SignedOut>
+      {/* </SignedOut> */}
 
-      <SignedIn>{redirect("/dashboard")}</SignedIn>
+    
     </div>
   );
 }
