@@ -594,20 +594,20 @@ export default function BillingPage() {
                               <AlertTriangle className="h-5 w-5 text-red-500" />
                               Cancel Pro Subscription
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="space-y-3">
-                                Are you sure you want to cancel your Pro subscription? This action cannot be undone.
-                              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-2">
-                                  What happens when you cancel:
-                                </p>
-                                <ul className="text-sm text-red-600 dark:text-red-400 space-y-1">
-                                  <li>• You'll lose access to Pro features after this date</li>
-                                  <li>• Your account will be downgraded to the Free plan</li>
-                                  <li>• You can resubscribe at any time</li>
-                                </ul>
-                              </div>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel your Pro subscription? This action cannot be undone.
                             </AlertDialogDescription>
-                          </AlertDialogHeader>
+                            </AlertDialogHeader>
+                            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 my-4">
+                              <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-3">
+                                What happens when you cancel:
+                              </p>
+                              <ul className="text-sm text-red-600 dark:text-red-400 space-y-2">
+                                <li>• You will lose access to Pro features</li>
+                                <li>• Your account will be downgraded to the Free plan</li>
+                                <li>• You can resubscribe at any time</li>
+                              </ul>
+                            </div>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
                             <AlertDialogAction
