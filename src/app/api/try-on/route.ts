@@ -60,15 +60,26 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const modelImageFile = formData.get("modelImage") as File;
     const garmentImageFile = formData.get("garmentImage") as File;
+    const previousModelImage = formData.get("previousModelImage") as string;
+    const previousGarmentImage = formData.get("previousGarmentImage") as string;
     const category = formData.get("category") as string;
 
-    if (!modelImageFile || !garmentImageFile || !category) {
+    if (!modelImageFile && !previousModelImage || !garmentImageFile && !previousGarmentImage || !category) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Upload images to S3
-    const modelImageUrl = await uploadToS3(modelImageFile, "model");
-    const garmentImageUrl = await uploadToS3(garmentImageFile, "garment");
+    
+    let modelImageUrl: string, garmentImageUrl: string;
+    if(previousModelImage && previousGarmentImage){
+      // Use previous images
+      modelImageUrl = previousModelImage;
+      garmentImageUrl = previousGarmentImage;
+    }
+    else{
+      // Upload images to S3
+      modelImageUrl = await uploadToS3(modelImageFile, "model");
+      garmentImageUrl = await uploadToS3(garmentImageFile, "garment");
+    }
 
     console.log("Images uploaded to S3:", { 
       modelImage: modelImageUrl, 

@@ -113,11 +113,6 @@ export default function Dashboard() {
   };
 
   // Helper function to convert URL to File object for API
-  const urlToFile = async (url: string, filename: string): Promise<File> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new File([blob], filename, { type: blob.type });
-  };
 
   const handleTryOn = async () => {
     const hasModelImage = modelImage || selectedModelImageUrl;
@@ -138,24 +133,14 @@ export default function Dashboard() {
       if (modelImage) {
         formData.append("modelImage", modelImage);
       } else if (selectedModelImageUrl) {
-        // Convert URL to File object
-        const modelFile = await urlToFile(
-          selectedModelImageUrl,
-          "previous-model.jpg"
-        );
-        formData.append("modelImage", modelFile);
+        formData.append("previousModelImage", selectedModelImageUrl);
       }
 
       // Handle garment image (file or URL)
       if (garmentImage) {
         formData.append("garmentImage", garmentImage);
       } else if (selectedGarmentImageUrl) {
-        // Convert URL to File object
-        const garmentFile = await urlToFile(
-          selectedGarmentImageUrl,
-          "previous-garment.jpg"
-        );
-        formData.append("garmentImage", garmentFile);
+        formData.append("previousGarmentImage", selectedGarmentImageUrl);
       }
 
       formData.append("category", category);
