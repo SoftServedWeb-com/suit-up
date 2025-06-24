@@ -7,14 +7,14 @@ import crypto from "crypto";
 
 // Initialize S3 client
 const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "us-east-1",
+  region: process.env.TRIALROOM_AWS_REGION || "us-east-1",
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.TRIALROOM_AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.TRIALROOM_AWS_SECRET_ACCESS_KEY!,
   },
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME!;
+const BUCKET_NAME = process.env.TRIALROOM_AWS_S3_BUCKET_NAME!;
 
 // Helper function to upload file to S3
 async function uploadToS3(file: File, prefix: string): Promise<string> {
@@ -33,7 +33,7 @@ async function uploadToS3(file: File, prefix: string): Promise<string> {
     await s3Client.send(new PutObjectCommand(uploadParams));
     
     // Return the public URL
-    return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
+    return `https://${BUCKET_NAME}.s3.${process.env.TRIALROOM_AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
   } catch (error) {
     console.error("S3 upload error:", error);
     throw new Error("Failed to upload file to S3");
