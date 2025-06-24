@@ -61,8 +61,6 @@ async function downloadAndUploadToS3(imageUrl: string, requestId: string): Promi
       Key: fileName,
       Body: imageBuffer,
       ContentType: contentType,
-      // Make the object publicly readable if your bucket allows it
-      // ACL: 'public-read', // Uncomment if you want public access
     };
 
     await s3Client.send(new PutObjectCommand(uploadParams));
