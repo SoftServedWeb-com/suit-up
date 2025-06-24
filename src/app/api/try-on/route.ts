@@ -75,6 +75,16 @@ export async function POST(request: Request) {
       modelImageUrl = previousModelImage;
       garmentImageUrl = previousGarmentImage;
     }
+    else if(previousGarmentImage) {
+      // Use previous garment image
+      modelImageUrl = await uploadToS3(modelImageFile, "model");
+      garmentImageUrl = previousGarmentImage;
+    }
+    else if(previousModelImage) {
+      // Use previous model image
+      modelImageUrl = previousModelImage;
+      garmentImageUrl = await uploadToS3(garmentImageFile, "garment");
+    }
     else{
       // Upload images to S3
       modelImageUrl = await uploadToS3(modelImageFile, "model");
