@@ -4,7 +4,10 @@ import {
   SignInButton
 } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
-import { Sparkles, ArrowRight, Zap, Palette, Camera } from "lucide-react";
+import { Sparkles, ArrowRight, Zap, Palette, Camera, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 export default async function Home() {
   
@@ -38,11 +41,16 @@ export default async function Home() {
                 
                 {/* CTA Button */}
                 <div className="mt-10 flex items-center justify-center gap-x-6">
-                  <SignInButton mode="modal">
-                    <button className="group relative bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
+                  <SignInButton mode="modal" >
+                    {/* <button className="group relative bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 px-8 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center gap-2">
                       Dashboard
                       <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </button>
+                    </button> */}
+                    <Link
+                      href={"/dashboard"}
+                      className={cn(buttonVariants({"variant":"default"}))}>
+                      Dashboard <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                   </SignInButton>
                   <button className="text-foreground hover:text-primary font-semibold py-3 px-4 transition-colors">
                     Learn more
