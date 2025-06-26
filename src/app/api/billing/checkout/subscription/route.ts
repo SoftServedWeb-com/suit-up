@@ -10,14 +10,14 @@ const FASHION_TRYON_PLANS = {
     productId: "free",
     name: "Fashion Try-On Free",
     price: 0,
-    tryOns: 20,
+    tryOns: 10,
     billingCycle: "monthly"
   },
   PRO: {
     productId: process.env.DODO_PRO_PRODUCT_ID!,
     name: "Fashion Try-On Pro",
     price: 2000, // ₹2000
-    tryOns: 300,
+    tryOns: 100,
     billingCycle: "monthly"
   }
 } as const;

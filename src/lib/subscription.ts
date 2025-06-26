@@ -12,31 +12,31 @@ export interface SubscriptionLimits {
 
 export const PLAN_LIMITS: Record<Plan, SubscriptionLimits> = {
   FREE: {
-    maxTryOnsPerMonth: 20,
+    maxTryOnsPerMonth: 10,
     hasUnlimitedTryOns: false,
-    features: ["20 try-ons", "Standard processing", "Basic quality", "Community support"],
+    features: ["10 try-ons", "Standard processing", "Basic quality", "Community support"],
     price: 0
   },
   BASIC: {
+    maxTryOnsPerMonth: 50,
+    hasUnlimitedTryOns: false,
+    features: ["50 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
+    dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
+    price: 1000 // ₹2000 
+  },
+  PRO: {
     maxTryOnsPerMonth: 100,
     hasUnlimitedTryOns: false,
     features: ["100 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
     dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
-    price: 100000 // ₹2000 in paise
+    price: 2000 // ₹2000 
   },
-  PRO: {
+  PREMIUM: {
     maxTryOnsPerMonth: 300,
     hasUnlimitedTryOns: false,
     features: ["300 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
     dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
-    price: 200000 // ₹2000 in paise
-  },
-  PREMIUM: {
-    maxTryOnsPerMonth: 500,
-    hasUnlimitedTryOns: false,
-    features: ["500 try-ons per month", "Priority processing", "High-quality results", "Email support", "Commercial usage"],
-    dodoProductId: process.env.DODO_PRO_PRODUCT_ID as string,
-    price: 300000 // ₹2000 in paise
+    price: 3000 // ₹4000 
   },
 
 };
