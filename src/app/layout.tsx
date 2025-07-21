@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
-import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import {Toaster} from "sonner"
+import Home from "./page";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +21,8 @@ const serif = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Immersive Cloth Tryon",
-  description: "Made by Aniz - SSW",
+  title: "Trailroom.Studio",
+  description: "Experience the future of fashion with AI-powered virtual try-ons",
 };
 
 export default async function RootLayout({
@@ -36,7 +36,7 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} antialiased`}
+            className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} antialiased `}
         >
           <Toaster richColors closeButton/>
           {children}

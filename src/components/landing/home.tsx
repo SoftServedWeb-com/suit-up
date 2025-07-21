@@ -1,6 +1,4 @@
 import {
-    SignedIn,
-    SignedOut,
     SignInButton
   } from "@clerk/nextjs";
   import { redirect } from "next/navigation";
@@ -35,12 +33,12 @@ import {
     quote: string;
   }
   
-  export default async function Home() {
-    const { userId } = await auth();
+  export default async function Home2() {
+    const { userId} = await auth();
     
-    if (userId) {
-      return redirect("/dashboard");
-    }
+    // if (userId) {
+    //   return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`);
+    // }
   
     const features: Feature[] = [
       {
@@ -85,7 +83,7 @@ import {
     ];
   
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-background rounded-md ring ring-ring/70">
         {/* Navigation */}
         <nav className="relative z-50 px-6 py-6">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -94,14 +92,11 @@ import {
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-semibold text-gray-900">
-                Immersive
+                TrialRoom Studio
               </span>
             </div>
             
             <div className="hidden md:flex items-center space-x-12">
-              <a href="#features" className="text-gray-600 hover:text-indigo-600 transition-colors text-sm font-medium">Features</a>
-              <a href="#how-it-works" className="text-gray-600 hover:text-indigo-600 transition-colors text-sm font-medium">Process</a>
-              <a href="#testimonials" className="text-gray-600 hover:text-indigo-600 transition-colors text-sm font-medium">Reviews</a>
               <SignInButton mode="modal">
                 <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors">
                   Dashboard
@@ -114,36 +109,26 @@ import {
         {/* Hero Section */}
         <section className="px-6 py-20 lg:py-32">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-8">
-              <div className="inline-flex items-center px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-full text-sm font-medium text-indigo-700 mb-8">
-                <Star className="h-4 w-4 mr-2" />
-                Trusted by 10,000+ Fashion Professionals
-              </div>
-              
-              <h1 className="text-5xl lg:text-7xl font-light text-gray-900 mb-8 leading-tight">
-                The Future of
-                <br />
-                <span className="font-medium text-indigo-600">Fashion Visualization</span>
-              </h1>
-              
-              <p className="text-xl lg:text-2xl text-gray-600 mb-12 leading-relaxed max-w-3xl mx-auto">
-                Create stunning, photorealistic virtual try-ons instantly. 
-                Professional quality results for designers, models, and brands.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
-                <SignInButton mode="modal">
-                  <button className="group bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-medium transition-all flex items-center">
-                    Start Creating
-                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </SignInButton>
-                
-                <button className="text-gray-700 hover:text-indigo-600 transition-colors text-lg font-medium">
-                  Watch Demo
+             <div className="mb-8">
+            <h1 className="text-5xl lg:text-7xl font-light text-gray-900 mb-8 leading-tight tracking-tight">
+              Elevate the Art of <br />
+              <span className="font-serif font-semibold text-black">Bespoke Fashion</span>
+            </h1>
+            <p className="text-xl lg:text-2xl text-gray-600 mb-12 leading-relaxed max-w-3xl mx-auto font-light">
+              Present your custom-tailored designs with editorial precision. Our AI recreates the fitting room experience—virtually.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+              <SignInButton mode="modal">
+                <button className="group bg-black hover:bg-gray-900 text-white px-8 py-4 rounded-lg text-lg font-medium transition-all flex items-center">
+                  Start Creating
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </button>
-              </div>
+              </SignInButton>
+              <button className="text-gray-700 hover:text-black transition-colors text-lg font-medium">
+                Watch Demo
+              </button>
             </div>
+          </div>
             
             {/* Hero Visual */}
             <div className="relative max-w-5xl mx-auto">
@@ -326,7 +311,7 @@ import {
                 <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
-                <span className="text-lg font-semibold text-gray-900">Immersive</span>
+                <span className="text-lg font-semibold text-gray-900">TrialRoom Studio</span>
               </div>
               
               <div className="flex space-x-8 text-sm text-gray-500">
@@ -337,7 +322,7 @@ import {
             </div>
             
             <div className="mt-8 pt-8 border-t border-gray-100 text-center text-sm text-gray-400">
-              <p>&copy; 2024 Immersive. All rights reserved.</p>
+              <p>&copy; 2024 TrialRoom Studio. All rights reserved.</p>
             </div>
           </div>
         </footer>
