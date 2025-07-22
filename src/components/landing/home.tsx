@@ -1,13 +1,9 @@
 import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import {
-  Sparkles,
-  Camera,
-  Zap,
-  Users,
-} from "lucide-react";
+import { Sparkles, Camera, Zap, Users } from "lucide-react";
 import Link from "next/link";
 import { pinkOverlay, TrailRoom } from "@/lib/logo";
+import Footer from "../footer";
 
 interface Feature {
   icon: React.ReactNode;
@@ -35,12 +31,10 @@ export default async function Home2() {
   // }
 
   return (
-    <div className="min-h-fit overflow-hidden rounded-sm ring ring-ring/70 relative ">
+    <div className="h-fit overflow-hidden rounded-sm ring ring-ring/70 relative ">
       <div className="bg-background h-[97vh] relative">
-        {/* <div className="absolute inset-0 top-0 bottom-0 z-7 mix-blend-overlay overflow-hidden grainy" /> */}
         <div className="absolute inset-0 top-0 bottom-0 z-5 w-full h-full">
           {" "}
-          {/* Changed from w-[1920px] to w-full */}
           <video
             src={"/video.mp4"}
             className="w-full h-full object-cover z-7"
@@ -57,7 +51,7 @@ export default async function Home2() {
         {/* Centered Logo */}
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-            <TrailRoom className="text-white"/>
+            <TrailRoom className="text-white" />
           </div>
         </div>
 
@@ -67,7 +61,7 @@ export default async function Home2() {
               Elevate your Fashion Game
             </h1> */}
             <span className="font-medium text-md tracking-tight">
-              Welcome Artists! 
+              Welcome Artists!
             </span>
           </div>
           <Link href={"/dashboard"} className="font-medium underline">
@@ -76,7 +70,7 @@ export default async function Home2() {
         </div>
       </div>
       {/* Footer */}
-  
+      <Footer/>
     </div>
   );
 }
