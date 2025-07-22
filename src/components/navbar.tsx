@@ -1,9 +1,8 @@
 import { SignInButton } from "@clerk/nextjs";
-import { Sparkles } from "lucide-react";
 import React from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { trailRoom, TrialRoomLogowithText } from "@/lib/logo";
+import { TrialRoomLogowithText } from "@/lib/logo";
 
 export default function Navbar({ userId }: { userId: boolean }) {
   return (
