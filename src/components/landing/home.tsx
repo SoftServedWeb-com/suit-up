@@ -21,7 +21,7 @@ export default async function Home2() {
         <div className="absolute inset-0 top-0 bottom-0 z-5 w-full h-full">
           {" "}
           <video
-            src={"/video.mp4"}
+            src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4"}
             className="w-full h-full object-cover z-7"
             playsInline
             loop
