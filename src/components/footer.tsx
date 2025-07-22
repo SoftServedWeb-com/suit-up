@@ -7,8 +7,8 @@ export default function Footer() {
       <div className="flex flex-col w-full items-center px-6 py-6 md:py-3">
         {/* Desktop Layout */}
         <div className="hidden md:flex w-full items-center justify-between">
-          <div className="w-52 max-h-26 h-full object-cover flex items-center justify-center">
-            {TrialRoomLogowithText}
+          <div className="w-42 max-h-26 h-full object-cover flex items-center justify-center">
+            <TrialRoomLogowithText className="text-[#982E83]"/>
           </div>
           <div>
             <WaitingList />
@@ -18,7 +18,7 @@ export default function Footer() {
         {/* Mobile Layout */}
         <div className="flex md:hidden flex-col items-center gap-6 w-full">
           <div className="w-40 h-full object-cover flex items-center justify-center">
-            {TrialRoomLogowithText}
+            <TrialRoomLogowithText className="text-[#982E83]"/>
           </div>
           <div className="w-full flex justify-center">
             <WaitingList />
