@@ -12,7 +12,6 @@ export default async function Home2() {
 
 
   // if (userId) {
-    
   //   return redirect(`/dashboard`);
   // }
 
