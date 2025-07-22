@@ -1,34 +1,19 @@
 import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
-import { Sparkles, Camera, Zap, Users } from "lucide-react";
 import Link from "next/link";
 import { pinkOverlay, TrailRoom } from "@/lib/logo";
 import Footer from "../footer";
 import { Button } from "../ui/button";
+import { redirect } from "next/navigation";
 
-interface Feature {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-interface Step {
-  number: string;
-  title: string;
-  description: string;
-}
-
-interface Testimonial {
-  name: string;
-  role: string;
-  quote: string;
-}
 
 export default async function Home2() {
   const { userId } = await auth();
 
+
   // if (userId) {
-  //   return (`${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`);
+    
+  //   return redirect(`/dashboard`);
   // }
 
   return (
@@ -62,7 +47,7 @@ export default async function Home2() {
               Elevate your Fashion Game
             </h1> */}
             <span className="font-medium text-md tracking-tight">
-              Welcome Artists!
+              Welcome Bespoke Artists!
             </span>
           </div>
           <div className="flex items-center gap-4">
