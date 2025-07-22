@@ -12,10 +12,8 @@ export default function Navbar({ userId }: { userId: boolean }) {
         <div className="flex h-fit items-center justify-between">
           {/* Minimal logo */}
           <div className="w-24 h-24 items-center object-contain flex ">
-            {TrialRoomLogowithText}
+            <TrialRoomLogowithText/>
           </div>
-
-
           {/* Minimal CTA */}
           {userId ? (
             <Link href="/dashboard">
