@@ -12,12 +12,12 @@ const webhook = new Webhook(process.env.DODO_PAYMENTS_WEBHOOK_KEY!);
 const FASHION_TRYON_PLAN_CONFIG = {
   FREE: {
     dodoProductId: "free", // Free plan doesn't have a product ID
-    tryOnLimit: 20,
+    tryOnLimit: 10,
     price: 0
   },
   PRO: {
     dodoProductId: process.env.DODO_PRO_PRODUCT_ID!, // Your Pro plan product ID from Dodo Payments
-    tryOnLimit: 300,
+    tryOnLimit: 100,
     price: 2000 // ₹2000
   }
 };
