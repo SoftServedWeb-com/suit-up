@@ -36,7 +36,7 @@ export default async function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-            className={`${geistSans.variable} ${geistMono.variable} ${serif.variable} antialiased `}
+            className={`antialiased `}
         >
           <Toaster richColors closeButton/>
           {children}
