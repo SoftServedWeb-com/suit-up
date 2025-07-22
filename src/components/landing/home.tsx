@@ -4,6 +4,7 @@ import { Sparkles, Camera, Zap, Users } from "lucide-react";
 import Link from "next/link";
 import { pinkOverlay, TrailRoom } from "@/lib/logo";
 import Footer from "../footer";
+import { Button } from "../ui/button";
 
 interface Feature {
   icon: React.ReactNode;
@@ -27,7 +28,7 @@ export default async function Home2() {
   const { userId } = await auth();
 
   // if (userId) {
-  //   return redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`);
+  //   return (`${process.env.NEXT_PUBLIC_BASE_URL}/dashboard`);
   // }
 
   return (
@@ -55,7 +56,7 @@ export default async function Home2() {
           </div>
         </div>
 
-        <div className="relative flex h-full z-10 items-end-safe p-6 justify-between text-background">
+        <div className="relative flex h-full z-[999] items-end-safe p-6 justify-between text-background">
           <div className="flex flex-col gap-2">
             {/* <h1 className="text-4xl tracking-tight font-serif">
               Elevate your Fashion Game
@@ -64,13 +65,21 @@ export default async function Home2() {
               Welcome Artists!
             </span>
           </div>
-          <Link href={"/dashboard"} className="font-medium underline">
-            Live Try-On
-          </Link>
+          <div className="flex items-center gap-4">
+            {userId ? (
+              <Link href={"/dashboard"} className="font-medium underline hover:no-underline cursor-pointer">
+                Live Try-On
+              </Link>
+            ) : (
+              <SignInButton mode="modal">
+                <Button className="btn btn-primary underline hover:no-underline cursor-pointer" variant={"ghost"}>Sign In</Button>
+              </SignInButton>
+            )}
+          </div>
         </div>
       </div>
       {/* Footer */}
-      <Footer/>
+      <Footer />
     </div>
   );
 }
