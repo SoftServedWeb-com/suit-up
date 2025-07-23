@@ -74,10 +74,10 @@ export async function POST(request: Request) {
     const userGreeting = name ? `<p>Hello ${name},</p>` : '<p>Hello,</p>';
     
     const userHtml = `
-    <h1>Welcome to DIALGEN!</h1>
+    <h1>Welcome to TrialRoom Studio</h1>
     ${userGreeting}
     <p>Thank you for joining our waitlist.</p>
-    <p>We'll keep you updated on our progress.</p>
+    <p>Our team will be in contact soon!.</p>
     `;
 
     // Send emails
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: "softservedweb@gmail.com",
-        subject: "New Waitlist Signup - DIALGEN",
+        subject: "New Waitlist Signup - TrialRoom Studio",
         html: adminHtml,
       });
 
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       await transporter.sendMail({
         from: process.env.EMAIL_USER,
         to: email,
-        subject: "Welcome to DIALGEN Waitlist",
+        subject: "Welcome to TrialRoom Studio",
         html: userHtml,
       });
 
