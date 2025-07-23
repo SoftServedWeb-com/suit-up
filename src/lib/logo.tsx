@@ -135,7 +135,10 @@ export const TrialRoomLogowithText: React.FC<{ className?: string }> = ({
       d="M479.112 125.953V3.46004H525.521C551.227 3.46004 567.272 17.7796 567.272 40.5529C567.272 54.7 557.438 65.3965 546.569 68.6745C557.438 70.5723 563.821 77.1282 565.029 89.8951L568.48 125.953H553.47L550.365 91.4478C549.502 81.2688 543.636 76.6106 529.489 76.6106H493.949V125.953H479.112ZM527.419 62.1185C542.256 62.1185 551.745 54.3549 551.745 40.2079C551.745 26.0608 542.428 17.9521 525.521 17.9521H493.949V62.1185H527.419Z"
       fill="currentColor"
     />
-    <path d="M586.401 125.953V3.46004H601.238V125.953H586.401Z" fill="currentColor" />
+    <path
+      d="M586.401 125.953V3.46004H601.238V125.953H586.401Z"
+      fill="currentColor"
+    />
     <path
       d="M612.026 125.953L656.192 3.46004H676.205L720.372 125.953H704.154L691.905 91.1027H640.493L628.243 125.953H612.026ZM645.496 76.6106H686.902L666.199 16.3994L645.496 76.6106Z"
       fill="currentColor"
@@ -176,7 +179,10 @@ export const TrialRoomLogowithText: React.FC<{ className?: string }> = ({
       d="M689.309 340.221V217.729H727.265C764.875 217.729 786.096 239.812 786.096 279.148C786.096 318.311 765.393 340.221 728.3 340.221H689.309ZM727.265 325.729C756.076 325.729 770.568 310.202 770.568 279.148C770.568 247.748 756.076 232.221 727.265 232.221H704.146V325.729H727.265Z"
       fill="currentColor"
     />
-    <path d="M797.44 340.221V217.729H812.278V340.221H797.44Z" fill="currentColor" />
+    <path
+      d="M797.44 340.221V217.729H812.278V340.221H797.44Z"
+      fill="currentColor"
+    />
     <path
       d="M881.267 342.982C846.417 342.982 825.369 318.828 825.369 279.148C825.369 239.467 846.417 214.968 881.267 214.968C916.29 214.968 937.338 239.467 937.338 279.148C937.338 318.828 916.29 342.982 881.267 342.982ZM881.267 328.49C906.629 328.49 921.811 310.202 921.811 279.148C921.811 248.093 906.629 229.46 881.267 229.46C856.079 229.46 840.897 248.093 840.897 279.148C840.897 310.202 856.079 328.49 881.267 328.49Z"
       fill="currentColor"
@@ -241,6 +247,150 @@ export const pinkOverlay = (
           result="color1"
         />
         <feMerge result="effect1_noise_6176_20484">
+          <feMergeNode in="shape" />
+          <feMergeNode in="color1" />
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+);
+
+export const yellowOverlay = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1930"
+    height="1079"
+    viewBox="0 0 1930 1079"
+    fill="none"
+  >
+    <g filter="url(#filter0_n_6183_20523)">
+      <rect
+        x="0.855469"
+        y="0.970703"
+        width="1928.41"
+        height="1077.87"
+        fill="#9EBF17"
+        fillOpacity="0.7"
+      />
+    </g>
+    <defs>
+      <filter
+        id="filter0_n_6183_20523"
+        x="0.855469"
+        y="0.970703"
+        width="1928.41"
+        height="1077.87"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="BackgroundImageFix"
+          result="shape"
+        />
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.66666668653488159 0.66666668653488159"
+          stitchTiles="stitch"
+          numOctaves="3"
+          result="noise"
+          seed="7726"
+        />
+        <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+        <feComponentTransfer in="alphaNoise" result="coloredNoise1">
+          <feFuncA
+            type="discrete"
+            tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+          />
+        </feComponentTransfer>
+        <feComposite
+          operator="in"
+          in2="shape"
+          in="coloredNoise1"
+          result="noise1Clipped"
+        />
+        <feFlood floodColor="rgba(0, 0, 0, 0.2)" result="color1Flood" />
+        <feComposite
+          operator="in"
+          in2="noise1Clipped"
+          in="color1Flood"
+          result="color1"
+        />
+        <feMerge result="effect1_noise_6183_20523">
+          <feMergeNode in="shape" />
+          <feMergeNode in="color1" />
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
+);
+
+export const redOverlay = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="1921"
+    height="1081"
+    viewBox="0 0 1921 1081"
+    fill="none"
+  >
+    <g filter="url(#filter0_n_6171_20446)">
+      <rect
+        x="0.175781"
+        y="0.813477"
+        width="1920"
+        height="1080"
+        fill="#8E0000"
+        fillOpacity="0.7"
+      />
+    </g>
+    <defs>
+      <filter
+        id="filter0_n_6171_20446"
+        x="0.175781"
+        y="0.813477"
+        width="1920"
+        height="1080"
+        filterUnits="userSpaceOnUse"
+        colorInterpolationFilters="sRGB"
+      >
+        <feFlood floodOpacity="0" result="BackgroundImageFix" />
+        <feBlend
+          mode="normal"
+          in="SourceGraphic"
+          in2="BackgroundImageFix"
+          result="shape"
+        />
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.66666668653488159 0.66666668653488159"
+          stitchTiles="stitch"
+          numOctaves="3"
+          result="noise"
+          seed="7726"
+        />
+        <feColorMatrix in="noise" type="luminanceToAlpha" result="alphaNoise" />
+        <feComponentTransfer in="alphaNoise" result="coloredNoise1">
+          <feFuncA
+            type="discrete"
+            tableValues="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 "
+          />
+        </feComponentTransfer>
+        <feComposite
+          operator="in"
+          in2="shape"
+          in="coloredNoise1"
+          result="noise1Clipped"
+        />
+        <feFlood floodColor="rgba(0, 0, 0, 0.2)" result="color1Flood" />
+        <feComposite
+          operator="in"
+          in2="noise1Clipped"
+          in="color1Flood"
+          result="color1"
+        />
+        <feMerge result="effect1_noise_6171_20446">
           <feMergeNode in="shape" />
           <feMergeNode in="color1" />
         </feMerge>

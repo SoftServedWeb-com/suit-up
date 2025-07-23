@@ -1,14 +1,17 @@
 import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { pinkOverlay, TrailRoom } from "@/lib/logo";
+import { TrailRoom } from "@/lib/logo";
 import Footer from "../footer";
 import { Button } from "../ui/button";
 import { redirect } from "next/navigation";
-
+import { getTodaysOverlay } from "@/lib/colors-switch";
 
 export default async function Home2() {
   const { userId } = await auth();
+
+  // Get today's overlay
+  const todaysOverlay = getTodaysOverlay();
 
 
   // if (userId) {
@@ -16,8 +19,8 @@ export default async function Home2() {
   // }
 
   return (
-    <div className="h-fit overflow-hidden rounded-sm ring ring-ring/70 relative ">
-      <div className="bg-background h-[97vh] relative">
+    <div className="h-fit overflow-hidden rounded-sm border border-border relative ">
+      <div className="bg-background h-[92vh] md:h-[97vh] relative">
         <div className="absolute inset-0 top-0 bottom-0 z-5 w-full h-full">
           {" "}
           <video
@@ -29,7 +32,7 @@ export default async function Home2() {
             muted
           ></video>
           <div className="absolute inset-0 w-full h-full object-contain z-8 overflow-hidden">
-            {pinkOverlay}
+            {todaysOverlay}
           </div>
         </div>
 
@@ -45,7 +48,7 @@ export default async function Home2() {
             {/* <h1 className="text-4xl tracking-tight font-serif">
               Elevate your Fashion Game
             </h1> */}
-            <span className="font-medium text-md tracking-tight">
+            <span className="font-medium text-md md:text-lg tracking-tight">
               Welcome Bespoke Artists!
             </span>
           </div>
