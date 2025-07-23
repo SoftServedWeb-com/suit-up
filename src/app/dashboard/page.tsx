@@ -38,7 +38,6 @@ import FloatingSubscriptionIndicator from "@/components/subscription-data";
 import { toast } from "sonner";
 import Image from "next/image";
 import FashionQuote from "@/components/fashion-quote";
-import Footer from "@/components/footer";
 
 interface TryOnRequest {
   id: string;
@@ -1022,7 +1021,6 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
-      <Footer />
     </div>
   );
 }

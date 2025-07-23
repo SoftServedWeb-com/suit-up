@@ -343,7 +343,6 @@ export default function BillingPage() {
             <div className="flex flex-col md:flex-row  items-start gap-4">
               <Link
                 href={"/dashboard"}
-                onClick={() => window.history.back()}
                 className={cn(buttonVariants({ variant: "outline" }))}
               >
                 <ArrowLeft className="h-4 w-4" />
