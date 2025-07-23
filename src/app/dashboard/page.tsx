@@ -296,7 +296,7 @@ export default function Dashboard() {
 
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `trialRoomStudio-SSW-${Date.now()}.png`;
+      link.download = `trialRoomStudio_${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
