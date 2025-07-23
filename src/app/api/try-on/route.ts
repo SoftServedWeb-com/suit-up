@@ -36,7 +36,7 @@ async function uploadToS3(file: File, prefix: string): Promise<string> {
     return `https://${BUCKET_NAME}.s3.${process.env.TRIALROOM_AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
   } catch (error) {
     console.error("S3 upload error:", error);
-    throw new Error("Failed to upload file to S3");
+    throw new Error("File upload Failed. Please try again.");
   }
 }
 

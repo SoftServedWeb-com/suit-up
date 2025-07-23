@@ -7,6 +7,11 @@ const nextConfig:NextConfig = {
   experimental: {
       authInterrupts: true,
   },
+  images:{
+    remotePatterns:[
+        {protocol: "https", hostname: "color-swap.s3.us-east-1.amazonaws.com"}
+    ]
+  },
   webpack: (config, { isServer }) => {
       if (isServer) {
           config.plugins = [...config.plugins, new PrismaPlugin()];
