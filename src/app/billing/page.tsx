@@ -594,7 +594,7 @@ export default function BillingPage() {
                   <CardContent className="px-8 pb-8">
                     {/* Pricing */}
                     <div className="text-center mb-8">
-                      <div className="text-5xl font-light text-foreground tracking-tight">
+                      <div className="text-5xl font-light font-serif text-foreground tracking-tight">
                         ₹0
                       </div>
                       <div className="text-muted-foreground mt-1 font-light">
@@ -702,7 +702,7 @@ export default function BillingPage() {
                   <CardContent className="px-8 pb-8">
                     {/* Pricing */}
                     <div className="text-center mb-8">
-                      <div className="text-5xl font-light text-foreground tracking-tight">
+                      <div className="text-5xl font-ligh font-serif text-foreground tracking-tight">
                         ₹2,000
                       </div>
                       <div className="text-muted-foreground mt-1 font-light">
