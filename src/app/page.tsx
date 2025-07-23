@@ -7,8 +7,6 @@ export default async function Page() {
     <div className="min-h-screen  bg-border p-2">
       {/* <AuroraBackground> */}
          <Home2/>
-
-         
       {/* </AuroraBackground> */}
     </div>
   );

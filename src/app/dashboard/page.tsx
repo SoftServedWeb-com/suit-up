@@ -36,6 +36,7 @@ import CategorySelector from "@/components/category-selector";
 import Header from "@/components/page/header";
 import FloatingSubscriptionIndicator from "@/components/subscription-data";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface TryOnRequest {
   id: string;
@@ -119,7 +120,7 @@ export default function Dashboard() {
     const hasGarmentImage = garmentImage || selectedGarmentImageUrl;
 
     if (!hasModelImage || !hasGarmentImage || !category) {
-      alert("Please upload both images and select a category");
+      toast.info("Please upload both images and select a category");
       return;
     }
 
@@ -188,7 +189,7 @@ export default function Dashboard() {
       loadTryOnHistory();
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to submit try-on request. Please try again."
@@ -374,18 +375,16 @@ export default function Dashboard() {
       {/* Floating Subscription Indicator */}
       <FloatingSubscriptionIndicator />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
+        <h1>Trial Room Of your Dreams</h1>
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground ">
-                Immersive Studio
-              </h2>
               <p className="text-muted-foreground">
-                Create stunning virtual try-ons
+                Create and manage your styles
               </p>
             </div>
-            <TabsList className="glass-card">
+            <TabsList className="glass-card ">
               <TabsTrigger
                 value="try-on"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -413,92 +412,135 @@ export default function Dashboard() {
             )}
 
             {/* Latest Result Preview (Top Section) */}
-            {completedRequests.length > 0 && (
-              <Card className="glass-card border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50/50 to-emerald-50/50 dark:from-green-950/20 dark:to-emerald-950/20">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <CheckCircle className="h-5 w-5" />
-                    Latest Result
-                  </CardTitle>
-                  <CardDescription>
-                    Your most recent try-on result
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                    {/* Input Images */}
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">
-                          Original
-                        </p>
-                        <img
-                          src={completedRequests[0].modelImageUrl}
-                          alt="Model"
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
-                        />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground mb-2">
-                          Garment
-                        </p>
-                        <img
-                          src={completedRequests[0].garmentImageUrl}
-                          alt="Garment"
-                          className="w-24 h-24 object-cover rounded-lg border-2 border-border mx-auto"
-                        />
-                      </div>
+            {completedRequests.length > 0 && !processingRequests.length && (
+              <Card className="border-ring glass-card bg-card">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-primary text-lg tracking-tight font-semibold">
+                        Recent Trial
+                      </CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground mt-1">
+                        Click image to view full size
+                      </CardDescription>
                     </div>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-green-200/50 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-sm text-green-700">Ready</span>
+                    </div>
+                  </div>
+                </CardHeader>
 
-                    {/* Result Image */}
-                    <div className="text-center">
-                      <p className="text-sm font-medium text-muted-foreground mb-2">
-                        Result
-                      </p>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center  ">
+                    {/* Main Result - Hero Section */}
+                    <div className="lg:col-span-3 text-center">
                       <div
-                        className="relative group cursor-pointer"
+                        className="cursor-pointer inline-block group"
                         onClick={() => {
                           setCurrentResult(completedRequests[0]);
                           setShowResultModal(true);
                         }}
                       >
-                        <img
-                          src={completedRequests[0].resultImageUrl!}
-                          alt="Try-on result"
-                          className="w-full max-w-48 mx-auto rounded-lg shadow-lg border-2 border-primary/20 group-hover:border-primary/50 transition-all duration-300 group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <div className="bg-white/90 rounded-full p-2">
-                            <ZoomIn className="h-5 w-5 text-gray-800" />
+                        <div className="relative">
+                          <Image
+                            width={1080}
+                            height={1080}
+                            src={completedRequests[0].resultImageUrl!}
+                            alt="Virtual try-on result"
+                            className="w-full max-w-xs mx-auto rounded-lg border border-border group-hover:border-primary transition-all duration-200 shadow-sm group-hover:shadow-md"
+                          />
+                          {/* Subtle zoom hint */}
+                          <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <ZoomIn className="h-3 w-3 text-foreground" />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="space-y-3">
-                      <div className="text-center mb-4">
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                          ✨ Completed
-                        </Badge>
-                        {completedRequests[0].processingTime && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Processed in {completedRequests[0].processingTime}s
-                          </p>
-                        )}
-                        {completedRequests[0].creditsUsed && (
-                          <p className="text-xs text-muted-foreground">
-                            Credits used: {completedRequests[0].creditsUsed}
-                          </p>
-                        )}
+                    {/* Side Panel - Inputs & Actions */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* Virtual Trial */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-foreground">
+                          Virtual Trial Room
+                        </h3>
+
+                        <div className="flex items-center gap-4">
+                          <div className="text-center">
+                            <Image
+                              width={1080}
+                              height={1080}
+                              src={completedRequests[0].modelImageUrl}
+                              alt="Original"
+                              className="w-22 h-22 object-cover rounded-md border border-border"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              You
+                            </p>
+                          </div>
+
+                          <div className="flex-1 h-px bg-border"></div>
+                          <div className="text-muted-foreground">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1 h-px bg-border"></div>
+
+                          <div className="text-center">
+                            <Image
+                              width={1080}
+                              height={1080}
+                              src={completedRequests[0].garmentImageUrl}
+                              alt="Garment"
+                              className="w-22 h-22 object-cover rounded-md border border-border"
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Garment
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2">
+
+                      {/* Quick Stats */}
+                      <div className="space-y-2">
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          {completedRequests[0].processingTime && (
+                            <div className="flex justify-between">
+                              <span>Processing time</span>
+                              <span>
+                                {completedRequests[0].processingTime}s
+                              </span>
+                            </div>
+                          )}
+                          {completedRequests[0].creditsUsed && (
+                            <div className="flex justify-between">
+                              <span>Credits used</span>
+                              <span>{completedRequests[0].creditsUsed}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Primary Actions */}
+                      <div className="space-y-3">
                         <Button
                           size="sm"
+                          className="w-full"
                           onClick={() =>
                             handleDownload(completedRequests[0].resultImageUrl!)
                           }
-                          className="bg-primary hover:bg-primary/90"
                           disabled={isDownloading}
                         >
                           {isDownloading ? (
@@ -509,38 +551,44 @@ export default function Dashboard() {
                           ) : (
                             <>
                               <Download className="h-4 w-4 mr-2" />
-                              Download
+                              Download Result
                             </>
                           )}
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            handleShare(completedRequests[0].resultImageUrl!)
-                          }
-                        >
-                          <Share className="h-4 w-4 mr-2" />
-                          Share
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setCurrentResult(completedRequests[0]);
-                            setShowResultModal(true);
-                          }}
-                        >
-                          <ZoomIn className="h-4 w-4 mr-2" />
-                          View Full
-                        </Button>
+
+                        {/* Secondary Actions */}
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() =>
+                              handleShare(completedRequests[0].resultImageUrl!)
+                            }
+                          >
+                            <Share className="h-4 w-4 mr-1" />
+                            Share
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => {
+                              setCurrentResult(completedRequests[0]);
+                              setShowResultModal(true);
+                            }}
+                          >
+                            <ZoomIn className="h-4 w-4 mr-1" />
+                            Enlarge
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-
             {/* Processing Queue */}
             {processingRequests.length > 0 && (
               <Card className="glass-card border-primary/20">
@@ -626,7 +674,7 @@ export default function Dashboard() {
             </div>
 
             {/* Category Selection */}
-            <div className="max-w-xl">
+            <div className="w-full">
               <CategorySelector value={category} onChange={setCategory} />
             </div>
 
@@ -662,43 +710,49 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6">
-            <Card className="glass-card">
+            <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  Try-On History
-                  <Badge variant="secondary" className="ml-auto">
-                    {allRequests.length}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-card-foreground">
+                      Try-On History
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                      View and manage your virtual try-on sessions
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary" className="text-sm">
+                    {allRequests.length} sessions
                   </Badge>
-                </CardTitle>
-                <CardDescription>Your virtual try-on sessions</CardDescription>
+                </div>
               </CardHeader>
+
               <CardContent>
                 {isLoading ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 text-muted-foreground mx-auto animate-spin mb-4" />
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-4" />
                     <p className="text-muted-foreground">
-                      Loading your try-on history...
+                      Loading your sessions...
                     </p>
                   </div>
                 ) : allRequests.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                       <Sparkles className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      No try-ons yet
+                      No sessions yet
                     </h3>
-                    <p className="text-muted-foreground">
-                      Start by creating your first virtual try-on session!
+                    <p className="text-muted-foreground text-center max-w-sm">
+                      Create your first virtual try-on to see your results here
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="space-y-4">
                     {allRequests.map((request) => (
-                      <Card
+                      <div
                         key={request.id}
-                        className="overflow-hidden hover:shadow-lg transition-all duration-300 group cursor-pointer"
+                        className="p-4 border border-border rounded-lg hover:border-primary/50 transition-colors cursor-pointer group"
                         onClick={() => {
                           if (
                             request.status === "COMPLETED" &&
@@ -709,69 +763,174 @@ export default function Dashboard() {
                           }
                         }}
                       >
-                        <CardContent className="p-0">
-                          <div className="relative">
+                        {/* Mobile Layout */}
+                        <div className="block md:hidden space-y-3">
+                          {/* Header Row */}
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              className={getStatusColor(request.status)}
+                              variant="outline"
+                            >
+                              {request.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(request.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Images Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={request.modelImageUrl}
+                                alt="You"
+                                className="w-12 h-12 object-cover rounded border border-border"
+                              />
+                              <span className="text-muted-foreground">+</span>
+                              <img
+                                src={request.garmentImageUrl}
+                                alt="Item"
+                                className="w-12 h-12 object-cover rounded border border-border"
+                              />
+                            </div>
+
                             {request.status === "COMPLETED" &&
                             request.resultImageUrl ? (
-                              <img
-                                src={request.resultImageUrl}
-                                alt="Try-on result"
-                                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                              />
+                              <div className="relative">
+                                <img
+                                  src={request.resultImageUrl}
+                                  alt="Result"
+                                  className="w-16 h-16 object-cover rounded-lg border border-border"
+                                />
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
+                              </div>
                             ) : (
-                              <div className="w-full h-48 bg-muted flex items-center justify-center">
+                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
                                 {getStatusIcon(request.status)}
-                                <span className="ml-2 text-sm text-muted-foreground">
-                                  {request.status}
-                                </span>
                               </div>
                             )}
+                          </div>
 
-                            <div className="p-4 space-y-3">
-                              <div className="flex justify-between items-start">
-                                <Badge
-                                  className={getStatusColor(request.status)}
-                                >
-                                  {request.status}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {new Date(
-                                    request.createdAt
-                                  ).toLocaleDateString()}
-                                </span>
-                              </div>
-
-                              <div className="flex gap-2">
-                                <img
-                                  src={request.modelImageUrl}
-                                  alt="Model"
-                                  className="w-12 h-12 object-cover rounded border-2 border-border"
-                                />
-                                <img
-                                  src={request.garmentImageUrl}
-                                  alt="Garment"
-                                  className="w-12 h-12 object-cover rounded border-2 border-border"
-                                />
-                              </div>
-
-                              <div className="text-xs text-muted-foreground space-y-1">
-                                {request.processingTime && (
-                                  <p>Processed in {request.processingTime}s</p>
-                                )}
-                                {request.creditsUsed && (
-                                  <p>Credits used: {request.creditsUsed}</p>
-                                )}
-                              </div>
-
-                              {request.errorMessage && (
-                                <p className="text-xs text-red-500">
-                                  Error: {request.errorMessage}
-                                </p>
+                          {/* Stats Row */}
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-3">
+                              {request.processingTime && (
+                                <span>{request.processingTime}s</span>
+                              )}
+                              {request.creditsUsed && (
+                                <span>{request.creditsUsed} credits</span>
                               )}
                             </div>
+                            {request.status === "COMPLETED" &&
+                              request.resultImageUrl && (
+                                <ZoomIn className="h-4 w-4 group-hover:text-primary transition-colors" />
+                              )}
                           </div>
-                        </CardContent>
-                      </Card>
+
+                          {request.errorMessage && (
+                            <p className="text-sm text-destructive">
+                              {request.errorMessage}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Desktop Layout */}
+                        <div className="hidden md:flex items-center gap-4">
+                          {/* Status & Result Preview */}
+                          <div className="flex-shrink-0">
+                            {request.status === "COMPLETED" &&
+                            request.resultImageUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={request.resultImageUrl}
+                                  alt="Result"
+                                  className="w-16 h-16 object-cover rounded-lg border border-border"
+                                />
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
+                              </div>
+                            ) : (
+                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                                {getStatusIcon(request.status)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Session Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge
+                                className={getStatusColor(request.status)}
+                                variant="outline"
+                              >
+                                {request.status}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {new Date(request.createdAt).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                              {request.processingTime && (
+                                <span>{request.processingTime}s</span>
+                              )}
+                              {request.creditsUsed && (
+                                <span>{request.creditsUsed} credits</span>
+                              )}
+                            </div>
+
+                            {request.errorMessage && (
+                              <p className="text-sm text-destructive mt-1 truncate">
+                                {request.errorMessage}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Input Images Preview */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1">
+                              <img
+                                src={request.modelImageUrl}
+                                alt="You"
+                                className="w-8 h-8 object-cover rounded border border-border"
+                              />
+                              <span className="text-muted-foreground text-xs">
+                                +
+                              </span>
+                              <img
+                                src={request.garmentImageUrl}
+                                alt="Item"
+                                className="w-8 h-8 object-cover rounded border border-border"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Action Indicator */}
+                          <div className="flex-shrink-0">
+                            {request.status === "COMPLETED" &&
+                            request.resultImageUrl ? (
+                              <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                                <ZoomIn className="h-4 w-4" />
+                              </div>
+                            ) : (
+                              <div className="w-4 h-4"></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -783,11 +942,10 @@ export default function Dashboard() {
 
       {/* Result Modal */}
       <Dialog open={showResultModal} onOpenChange={setShowResultModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Try-On Result
+            <DialogTitle className="flex items-center gap-2 font-semibold text-primary">
+              Trial Room
             </DialogTitle>
           </DialogHeader>
           {currentResult && (

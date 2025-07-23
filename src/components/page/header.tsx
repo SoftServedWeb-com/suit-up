@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TrialRoomLogowithText } from "@/lib/logo";
 
 const navigation = [
   {
@@ -28,20 +29,11 @@ export default function Header() {
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className=" flex items-center justify-center">
-                <Image
-                  src="/ssw_logo.svg"
-                  height={40}
-                  width={40}
-                  alt="SSW Logo"
-                  className="h-15 w-15"
-                />
+              <div className="h-22 w-22 flex items-center justify-center">
+                <TrialRoomLogowithText className="text-primary"/>
               </div>
             </div>
           </div>
-
-          
- 
 
           {/* User Button */}
           <div className="flex items-center space-x-4">
