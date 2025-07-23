@@ -7,8 +7,8 @@ import { waitlistSchema } from "@/lib/waitlist-schema";
 // Create JWT client outside the handler function
 // This way it's only created once when the file is loaded
 const serviceAccountAuth = new JWT({
-  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  email: process.env.TRIALROOM_GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  key: process.env.TRIALROOM_GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 export async function POST(request: Request) {
@@ -37,12 +37,12 @@ export async function POST(request: Request) {
 
     // Create transporter - simpler configuration based on React Email example
     const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST || "smtp.zoho.in",
-      port: Number(process.env.EMAIL_PORT) || 465,
+      host: process.env.TRIALROOM_EMAIL_HOST || "smtp.zoho.in",
+      port: Number(process.env.TRIALROOM_EMAIL_PORT) || 465,
       secure: true,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD,
+        user: process.env.TRIALROOM_EMAIL_USER,
+        pass: process.env.TRIALROOM_EMAIL_PASSWORD,
       },
     });
 
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     try {
       // Send admin notification
       await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: process.env.TRIALROOM_EMAIL_USER,
         to: "softservedweb@gmail.com",
         subject: "New Waitlist Signup - TrialRoom Studio",
         html: adminHtml,
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
 
       // Send to user
       await transporter.sendMail({
-        from: process.env.EMAIL_USER,
+        from: process.env.TRIALROOM_EMAIL_USER,
         to: email,
         subject: "Welcome to TrialRoom Studio",
         html: userHtml,
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       try {
         // Initialize the sheet - using the JWT client created outside the function
         const doc = new GoogleSpreadsheet(
-          process.env.GOOGLE_SHEET_ID || "1YMVxk3_Hkxt8jp4xNSqFPghqlbqGoMFbgv-2u0TrHC0", 
+          process.env.TRIALROOM_GOOGLE_SHEET_ID || "1YMVxk3_Hkxt8jp4xNSqFPghqlbqGoMFbgv-2u0TrHC0", 
           serviceAccountAuth
         );
         
