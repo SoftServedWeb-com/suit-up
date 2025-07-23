@@ -37,6 +37,8 @@ import Header from "@/components/page/header";
 import FloatingSubscriptionIndicator from "@/components/subscription-data";
 import { toast } from "sonner";
 import Image from "next/image";
+import FashionQuote from "@/components/fashion-quote";
+import Footer from "@/components/footer";
 
 interface TryOnRequest {
   id: string;
@@ -369,20 +371,23 @@ export default function Dashboard() {
     hasModelInput && hasGarmentInput && category && !isSubmitting;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen  bg-background">
       <Header />
 
       {/* Floating Subscription Indicator */}
       <FloatingSubscriptionIndicator />
 
       <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
-        <h1>Trial Room Of your Dreams</h1>
+        <FashionQuote />
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-muted-foreground">
-                Create and manage your styles
+            <div className="">
+              <p className="text-2xl font-serif tracking-tight text-foreground">
+                Tailor Board
               </p>
+              <span className="opacity-70 text-sm text-muted-foreground">
+                Create and manage your styles
+              </span>
             </div>
             <TabsList className="glass-card ">
               <TabsTrigger
@@ -413,11 +418,11 @@ export default function Dashboard() {
 
             {/* Latest Result Preview (Top Section) */}
             {completedRequests.length > 0 && !processingRequests.length && (
-              <Card className="border-ring glass-card bg-card">
+              <Card className="border-ring bg-background">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-primary text-lg tracking-tight font-semibold">
+                      <CardTitle className="text-accent-foreground font-medium text-lg tracking-tight ">
                         Recent Trial
                       </CardTitle>
                       <CardDescription className="text-sm text-muted-foreground mt-1">
@@ -944,7 +949,7 @@ export default function Dashboard() {
       <Dialog open={showResultModal} onOpenChange={setShowResultModal}>
         <DialogContent className="w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-semibold text-primary">
+            <DialogTitle className="flex items-center gap-2 font-medium font-serif text-primary">
               Trial Room
             </DialogTitle>
           </DialogHeader>
@@ -1017,6 +1022,7 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
+      <Footer />
     </div>
   );
 }

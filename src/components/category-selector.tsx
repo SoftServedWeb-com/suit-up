@@ -43,7 +43,7 @@ export default function CategorySelector({ value, onChange }: CategorySelectorPr
     return (
       <div className="space-y-4 text-sm p-3 glass-card">
         <div>
-          <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+          <h4 className="text-accent-foreground font-medium mb-3 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" />
             Category Guide
           </h4>
@@ -122,7 +122,7 @@ export default function CategorySelector({ value, onChange }: CategorySelectorPr
     <Card className="glass-card hover:border-primary/30 transition-all duration-300">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-accent-foreground font-medium">
             <Palette className="h-5 w-5 text-primary" />
             Clothing Category
           </div>

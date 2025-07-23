@@ -208,8 +208,7 @@ export default function FloatingSubscriptionIndicator() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {getPlanIcon(subscription.plan)}
-                <h4 className="font-semibold text-indigo-600">Current Plan</h4>
+                <h4 className="tracking-tight font-sans text-primary">Current Plan</h4>
               </div>
               <div className="flex gap-2">
                 <Badge className={getPlanColor(subscription.plan)}>

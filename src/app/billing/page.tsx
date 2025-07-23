@@ -96,8 +96,11 @@ interface PaymentHistoryResponse {
 }
 
 export default function BillingPage() {
-  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
-  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>([]);
+  const [subscriptionData, setSubscriptionData] =
+    useState<SubscriptionData | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isCanceling, setIsCanceling] = useState(false);
 
@@ -108,7 +111,7 @@ export default function BillingPage() {
   const loadBillingData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Load subscription data
       const subResponse = await fetch("/api/subscription");
       if (subResponse.ok) {
@@ -121,11 +124,11 @@ export default function BillingPage() {
       // Load payment history - updated to handle the actual API response
       const historyResponse = await fetch("/api/billing/history");
       if (historyResponse.ok) {
-        const historyData: PaymentHistoryResponse = await historyResponse.json();
+        const historyData: PaymentHistoryResponse =
+          await historyResponse.json();
         console.log("Payment history loaded:", historyData);
         setPaymentHistory(historyData.items || []);
       }
-
     } catch (error) {
       console.error("Error loading billing data:", error);
       toast.error("Failed to load billing information");
@@ -136,11 +139,13 @@ export default function BillingPage() {
 
   const handleUpgrade = async (plan: string) => {
     try {
-      const response = await fetch(`/api/billing/checkout/subscription?plan=${plan}`);
-      
+      const response = await fetch(
+        `/api/billing/checkout/subscription?plan=${plan}`
+      );
+
       if (response.ok) {
         const data = await response.json();
-        if(data.plan === "FREE") {
+        if (data.plan === "FREE") {
           window.location.href = "/billing";
         }
         if (data.plan !== "FREE" && data.payment_link) {
@@ -158,7 +163,7 @@ export default function BillingPage() {
   const handleCancelPlan = async () => {
     try {
       setIsCanceling(true);
-      
+
       // Call your cancel subscription API endpoint
       const response = await fetch("/api/billing/checkout/subscription", {
         method: "POST",
@@ -177,11 +182,12 @@ export default function BillingPage() {
       } else {
         console.log("Failed to cancel subscription", response);
         toast.error("Failed to cancel subscription");
-
       }
     } catch (error) {
       console.error("Error canceling subscription:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to cancel subscription");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to cancel subscription"
+      );
     } finally {
       setIsCanceling(false);
     }
@@ -285,7 +291,7 @@ export default function BillingPage() {
     const planName = payment.metadata.plan;
     const billingCycle = payment.metadata.billing_cycle;
     const tryOnLimit = payment.metadata.try_on_limit;
-    
+
     return `${planName} Plan - ${billingCycle} subscription (${tryOnLimit} try-ons)`;
   };
 
@@ -296,23 +302,34 @@ export default function BillingPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center py-12">
             <RefreshCw className="h-8 w-8 text-muted-foreground mx-auto animate-spin mb-4" />
-            <p className="text-muted-foreground">Loading billing information...</p>
+            <p className="text-muted-foreground">
+              Loading billing information...
+            </p>
           </div>
         </main>
       </div>
     );
   }
 
-  const daysRemaining = subscriptionData ? calculateDaysRemaining(subscriptionData.currentPeriodEnd) : 0;
-  const daysTotal = subscriptionData ? calculateDaysTotal(subscriptionData.currentPeriodStart, subscriptionData.currentPeriodEnd) : 1;
-  
-  const usagePercentage = subscriptionData?.hasUnlimitedTryOns 
-    ? 100 
-    : subscriptionData 
-    ? ((subscriptionData.tryOnPurchased - subscriptionData.tryOnRemaining) / subscriptionData.tryOnPurchased) * 100
+  const daysRemaining = subscriptionData
+    ? calculateDaysRemaining(subscriptionData.currentPeriodEnd)
+    : 0;
+  const daysTotal = subscriptionData
+    ? calculateDaysTotal(
+        subscriptionData.currentPeriodStart,
+        subscriptionData.currentPeriodEnd
+      )
+    : 1;
+
+  const usagePercentage = subscriptionData?.hasUnlimitedTryOns
+    ? 100
+    : subscriptionData
+    ? ((subscriptionData.tryOnPurchased - subscriptionData.tryOnRemaining) /
+        subscriptionData.tryOnPurchased) *
+      100
     : 0;
 
-  const periodPercentage = subscriptionData 
+  const periodPercentage = subscriptionData
     ? ((daysTotal - daysRemaining) / daysTotal) * 100
     : 0;
 
@@ -320,18 +337,19 @@ export default function BillingPage() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="overview" className="space-y-8">
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 md:flex-row items-start md:items-center justify-between">
+            <div className="flex flex-col md:flex-row  items-start gap-4">
               <Link
                 href={"/dashboard"}
                 onClick={() => window.history.back()}
-                className={cn(buttonVariants({"variant":"outline"}))}>
+                className={cn(buttonVariants({ variant: "outline" }))}
+              >
                 <ArrowLeft className="h-4 w-4" />
               </Link>
               <div className="space-y-1">
-                <h2 className="text-2xl font-serif font-medium tracking-wide text-foreground">
+                <h2 className="text-2xl font-serif font-medium tracking-tight text-foreground">
                   Billing & Usage
                 </h2>
                 <p className="text-muted-foreground">
@@ -358,284 +376,471 @@ export default function BillingPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* Current Plan Status */}
             {subscriptionData && (
-              <Card className="glass-card border-primary/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {getPlanIcon(subscriptionData.plan)}
-                    Current Plan
-                    <Badge className={getPlanColor(subscriptionData.plan)}>
-                      {subscriptionData.plan}
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription>
-                    Your subscription details and current usage
-                  </CardDescription>
+              <Card className="border-border/50 bg-card">
+                <CardHeader className="pb-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl font-medium tracking-tight mb-2">
+                        Account Overview
+                      </CardTitle>
+                      <CardDescription className="text-base font-light">
+                        Your subscription and usage details
+                      </CardDescription>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-center">
+                        {getPlanIcon(subscriptionData.plan)}
+                      </div>
+                      <div className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium">
+                        {subscriptionData.plan}
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+                <CardContent className="space-y-8">
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Status */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         {getStatusIcon(subscriptionData.status)}
                         <span className="text-sm font-medium">Status</span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">
+                      <div className="text-2xl font-light tracking-tight text-foreground">
                         {subscriptionData.status}
-                      </p>
+                      </div>
                     </div>
 
                     {/* Days Remaining */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-blue-500" />
-                        <span className="text-sm font-medium">Days Remaining</span>
+                    <div className="space-y-3 ">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Days Remaining
+                        </span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {daysRemaining}
-                      </p>
-                      <Progress value={100 - periodPercentage} className="h-2" />
+                      <div className="space-y-2">
+                        <div className="text-2xl font-light tracking-tight text-foreground">
+                          {daysRemaining}
+                        </div>
+                        <div className="w-full bg-muted/50 rounded-full h-1.5">
+                          <div
+                            className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                            style={{ width: `${100 - periodPercentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Try-ons Remaining */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-purple-500" />
-                        <span className="text-sm font-medium">Try-ons Remaining</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Try-ons Left
+                        </span>
                       </div>
-                      <p className="text-2xl font-bold text-foreground">
-                        {subscriptionData.hasUnlimitedTryOns 
-                          ? "∞" 
-                          : `${subscriptionData.tryOnRemaining}/${subscriptionData.tryOnPurchased}`
-                        }
-                      </p>
-                      {!subscriptionData.hasUnlimitedTryOns && (
-                        <Progress value={100 - usagePercentage} className="h-2" />
-                      )}
+                      <div className="space-y-2">
+                        <div className="text-2xl font-light tracking-tight text-foreground">
+                          {subscriptionData.hasUnlimitedTryOns
+                            ? "∞"
+                            : `${subscriptionData.tryOnRemaining}`}
+                        </div>
+                        {!subscriptionData.hasUnlimitedTryOns && (
+                          <div className="w-full bg-muted/50 rounded-full h-1.5">
+                            <div
+                              className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                              style={{ width: `${100 - usagePercentage}%` }}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Next Billing */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="h-4 w-4 text-green-500" />
-                        <span className="text-sm font-medium">Next Billing</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <CreditCard className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          Next Billing
+                        </span>
                       </div>
-                      <p className="text-sm font-medium text-foreground">
-                        {subscriptionData.plan === "FREE" 
-                          ? "No billing required" 
-                          : new Date(subscriptionData.currentPeriodEnd).toLocaleDateString()
-                        }
-                      </p>
+                      <div className="text-sm font-light text-foreground">
+                        {subscriptionData.plan === "FREE"
+                          ? "No billing required"
+                          : new Date(
+                              subscriptionData.currentPeriodEnd
+                            ).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Usage Progress Bar */}
+                  {/* Usage Summary */}
                   {!subscriptionData.hasUnlimitedTryOns && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Try-ons used this month</span>
-                        <span>
-                          {subscriptionData.tryOnPurchased - subscriptionData.tryOnRemaining} / {subscriptionData.tryOnPurchased}
+                    <div className="bg-accent/30 border border-border rounded-xl p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-medium text-foreground">
+                          Monthly Usage
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {subscriptionData.tryOnPurchased -
+                            subscriptionData.tryOnRemaining}{" "}
+                          of {subscriptionData.tryOnPurchased} used
                         </span>
                       </div>
-                      <Progress value={usagePercentage} className="h-3" />
+                      <div className="w-full bg-accent-foreground/20 rounded-full border  h-2">
+                        <div
+                          className="bg-primary h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${usagePercentage}%` }}
+                        ></div>
+                      </div>
                     </div>
                   )}
 
-                  {/* Low usage warning */}
-                  {!subscriptionData.hasUnlimitedTryOns && subscriptionData.tryOnRemaining <= 5 && subscriptionData.tryOnRemaining > 0 && (
-                    <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
-                      <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                      <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                        You're running low on try-ons! Only {subscriptionData.tryOnRemaining} generations remaining this month.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  {/* Alerts */}
+                  {!subscriptionData.hasUnlimitedTryOns &&
+                    subscriptionData.tryOnRemaining <= 5 &&
+                    subscriptionData.tryOnRemaining > 0 && (
+                      <div className="bg-amber-50/50 border border-amber-200/50 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <AlertTriangle className="h-3 w-3 text-amber-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-amber-900 mb-1">
+                              Running Low
+                            </p>
+                            <p className="text-sm text-amber-700 font-light">
+                              Only {subscriptionData.tryOnRemaining} try-ons
+                              remaining this month. Consider upgrading to Pro
+                              for unlimited access.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                  {/* No try-ons warning */}
-                  {!subscriptionData.hasUnlimitedTryOns && subscriptionData.tryOnRemaining == 0 && (
-                    <Alert className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                      <AlertDescription className="text-red-700 dark:text-red-300">
-                        You've used all your try-ons for this month.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  {!subscriptionData.hasUnlimitedTryOns &&
+                    subscriptionData.tryOnRemaining === 0 && (
+                      <div className="bg-red-50/50 border border-red-200/50 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-5 h-5 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <AlertTriangle className="h-3 w-3 text-red-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-red-900 mb-1">
+                              Limit Reached
+                            </p>
+                            <p className="text-sm text-red-700 font-light">
+                              You've used all your try-ons for this month.
+                              Upgrade to Pro for unlimited access or wait for
+                              next month's reset.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                 </CardContent>
               </Card>
             )}
 
             {/* Available Plans */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground">Available Plans</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-8">
+              {/* Header Section */}
+              <div className="text-center">
+                <h2 className="text-2xl font-medium text-foreground mb-2">
+                  Choose Your Plan
+                </h2>
+                <p className="text-muted-foreground">
+                  Select the perfect plan for your virtual try-on needs
+                </p>
+              </div>
+
+              {/* Plans Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
                 {/* Free Plan */}
-                <Card className={`glass-card transition-all duration-300 ${
-                  subscriptionData?.plan === "FREE" 
-                    ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 ring-2 ring-blue-500/20 shadow-lg" 
-                    : "border-blue-200 dark:border-blue-800 hover:border-blue-300 dark:hover:border-blue-700"
-                }`}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Gift className="h-5 w-5 text-blue-500" />
-                        Free Plan
-                      </CardTitle>
-                      {subscriptionData?.plan === "FREE" && (
-                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                          Current Plan
-                        </Badge>
-                      )}
+                <Card
+                  className={`relative transition-all duration-300 ${
+                    subscriptionData?.plan === "FREE"
+                      ? "border-primary shadow-lg shadow-primary/10 bg-card"
+                      : "border-border/50 hover:border-border hover:shadow-md shadow-sm bg-card"
+                  }`}
+                >
+                  {subscriptionData?.plan === "FREE" && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-medium shadow-sm">
+                        Current Plan
+                      </div>
                     </div>
-                    <CardDescription>
+                  )}
+
+                  <CardHeader className="text-center pb-8 pt-8">
+                    <div className="w-16 h-16 bg-background border border-border/50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                      <Gift className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="text-2xl font-medium tracking-tight">
+                      Free
+                    </CardTitle>
+                    <CardDescription className="text-base mt-2">
                       Perfect for getting started
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-3xl font-bold">
-                      Free
-                      <span className="text-sm font-normal text-muted-foreground">/forever</span>
+
+                  <CardContent className="px-8 pb-8">
+                    {/* Pricing */}
+                    <div className="text-center mb-8">
+                      <div className="text-5xl font-light text-foreground tracking-tight">
+                        ₹0
+                      </div>
+                      <div className="text-muted-foreground mt-1 font-light">
+                        Forever
+                      </div>
                     </div>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        10 try-ons
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Standard processing time
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Basic quality results
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Community support
-                      </li>
-                    </ul>
-                    
+
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          10 try-ons included
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Standard processing
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Basic quality results
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Community support
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div>
+                      {subscriptionData?.plan === "FREE" ? (
+                        <Button
+                          variant="outline"
+                          className="w-full h-12 font-medium border-border/50"
+                          disabled
+                        >
+                          Current Plan
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full h-12 font-medium hover:bg-muted/50"
+                        >
+                          Downgrade to Free
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
                 {/* Pro Plan */}
-                <Card className={`glass-card transition-all duration-300 ${
-                  subscriptionData?.plan === "PRO" && subscriptionData.status === "ACTIVE" 
-                    ? "border-purple-500 bg-purple-50/50 dark:bg-purple-950/20 ring-2 ring-purple-500/20 shadow-lg" 
-                    : "border-purple-200 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-700"
-                }`}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="h-5 w-5 text-purple-500" />
-                        Pro Plan
-                      </CardTitle>
-                      {subscriptionData?.plan === "PRO" && subscriptionData.status === "ACTIVE" && (
-                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                <Card
+                  className={`relative transition-all duration-300 ${
+                    subscriptionData?.plan === "PRO" &&
+                    subscriptionData.status === "ACTIVE"
+                      ? "border-primary shadow-xl shadow-primary/15 bg-card ring-1 ring-primary/10"
+                      : "border-border/50 hover:border-primary/30 hover:shadow-lg shadow-md bg-card"
+                  }`}
+                >
+                  {subscriptionData?.plan === "PRO" &&
+                    subscriptionData.status === "ACTIVE" && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-primary text-primary-foreground px-4 py-1.5 rounded-full text-sm font-medium shadow-sm">
                           Current Plan
-                        </Badge>
-                      )}
+                        </div>
+                      </div>
+                    )}
+
+                  {/* Popular Badge */}
+                  {(!subscriptionData || subscriptionData?.plan !== "PRO") && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-foreground text-background px-4 py-1.5 rounded-full text-sm font-medium shadow-md">
+                        Recommended
+                      </div>
                     </div>
-                    <CardDescription>
-                      Perfect for regular users and professionals
+                  )}
+
+                  <CardHeader className="text-center pb-8 pt-8">
+                    <div className="w-16 h-16 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                      <Zap className="h-7 w-7 text-primary" />
+                    </div>
+                    <CardTitle className="text-2xl font-medium tracking-tight">
+                      Pro
+                    </CardTitle>
+                    <CardDescription className="text-base mt-2">
+                      For professionals and regular users
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-3xl font-bold">
-                      ₹2,000
-                      <span className="text-sm font-normal text-muted-foreground">/month</span>
+
+                  <CardContent className="px-8 pb-8">
+                    {/* Pricing */}
+                    <div className="text-center mb-8">
+                      <div className="text-5xl font-light text-foreground tracking-tight">
+                        ₹2,000
+                      </div>
+                      <div className="text-muted-foreground mt-1 font-light">
+                        per month
+                      </div>
                     </div>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        100 try-ons per month
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Priority processing
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        High-quality results
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Email support
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Commercial usage allowed
-                      </li>
-                    </ul>
-                    {(subscriptionData?.plan === "PRO" && subscriptionData?.status === "ACTIVE") ? (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            className="w-full"
-                            disabled={isCanceling}
+
+                    {/* Features */}
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          100 try-ons per month
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Priority processing
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          High-quality results
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Email support
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-4">
+                        <div className="w-5 h-5 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        </div>
+                        <span className="text-foreground font-light">
+                          Commercial usage
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action */}
+                    <div>
+                      {subscriptionData?.plan === "PRO" &&
+                      subscriptionData?.status === "ACTIVE" ? (
+                        <div className="space-y-3">
+                          <Button
+                            variant="outline"
+                            className="w-full h-12 font-medium border-border/50"
+                            disabled
                           >
-                            {isCanceling ? (
-                              <>
-                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                Canceling...
-                              </>
-                            ) : (
-                              <>
-                                <X className="h-4 w-4 mr-2" />
-                                Cancel Plan
-                              </>
-                            )}
+                            Current Plan
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2">
-                              <AlertTriangle className="h-5 w-5 text-red-500" />
-                              Cancel Pro Subscription
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to cancel your Pro subscription? This action cannot be undone.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4 my-4">
-                              <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-3">
-                                What happens when you cancel:
-                              </p>
-                              <ul className="text-sm text-red-600 dark:text-red-400 space-y-2">
-                                <li>• You will lose access to Pro features</li>
-                                <li>• Your account will be downgraded to the Free plan</li>
-                                <li>• You can resubscribe at any time</li>
-                              </ul>
-                            </div>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={handleCancelPlan}
-                              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                              disabled={isCanceling}
-                            >
-                              {isCanceling ? (
-                                <>
-                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                  Canceling...
-                                </>
-                              ) : (
-                                "Yes, Cancel Subscription"
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    ) : (
-                      <Button 
-                        className="w-full bg-purple-600 hover:bg-purple-700" 
-                        onClick={() => handleUpgrade("PRO")}
-                      >
-                        <Zap className="h-4 w-4 mr-2" />
-                        Upgrade to Pro
-                      </Button>
-                    )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full text-muted-foreground hover:text-destructive font-light"
+                              >
+                                Cancel subscription
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="border-border/50 shadow-xl">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-xl font-medium">
+                                  Cancel Pro Subscription?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-base font-light">
+                                  Your subscription will remain active until the
+                                  end of your current billing period. You can
+                                  resubscribe at any time.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+
+                              <div className="bg-muted/30 border border-border/50 rounded-xl p-6 space-y-3">
+                                <p className="font-medium">
+                                  What happens next:
+                                </p>
+                                <ul className="text-muted-foreground space-y-2 font-light">
+                                  <li className="flex items-start gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0"></div>
+                                    Access to Pro features until billing period
+                                    ends
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0"></div>
+                                    Automatic downgrade to Free plan
+                                  </li>
+                                  <li className="flex items-start gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground mt-2 flex-shrink-0"></div>
+                                    No charges for future billing periods
+                                  </li>
+                                </ul>
+                              </div>
+
+                              <AlertDialogFooter>
+                                <AlertDialogCancel className="font-medium">
+                                  Keep Plan
+                                </AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleCancelPlan}
+                                  className="bg-destructive hover:bg-destructive/90 font-medium"
+                                  disabled={isCanceling}
+                                >
+                                  {isCanceling ? (
+                                    <>
+                                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                      Canceling...
+                                    </>
+                                  ) : (
+                                    "Cancel Subscription"
+                                  )}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      ) : (
+                        <Button
+                          className="w-full h-12 font-medium shadow-sm"
+                          onClick={() => handleUpgrade("PRO")}
+                        >
+                          <Zap className="h-4 w-4 mr-2" />
+                          Upgrade to Pro
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -664,7 +869,8 @@ export default function BillingPage() {
                     </div>
                     <h3 className="font-medium mb-2">No payment history</h3>
                     <p className="text-sm text-muted-foreground">
-                      Your payment history will appear here once you make your first payment
+                      Your payment history will appear here once you make your
+                      first payment
                     </p>
                   </div>
                 ) : (
@@ -677,17 +883,22 @@ export default function BillingPage() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             {getPaymentStatusIcon(payment.status)}
-                            <p className="font-medium">{formatPaymentDescription(payment)}</p>
+                            <p className="font-medium">
+                              {formatPaymentDescription(payment)}
+                            </p>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>
-                              {new Date(payment.created_at).toLocaleDateString("en-US", {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit"
-                              })}
+                              {new Date(payment.created_at).toLocaleDateString(
+                                "en-US",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )}
                             </span>
                             <span className="flex items-center gap-1">
                               <CreditCard className="h-3 w-3" />
@@ -703,9 +914,14 @@ export default function BillingPage() {
                         <div className="flex items-center gap-3">
                           <div className="text-right">
                             <p className="font-semibold text-lg">
-                              {formatCurrency(payment.total_amount, payment.currency)}
+                              {formatCurrency(
+                                payment.total_amount,
+                                payment.currency
+                              )}
                             </p>
-                            <Badge className={getPaymentStatusColor(payment.status)}>
+                            <Badge
+                              className={getPaymentStatusColor(payment.status)}
+                            >
                               {payment.status}
                             </Badge>
                           </div>
@@ -714,7 +930,9 @@ export default function BillingPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                navigator.clipboard.writeText(payment.payment_id);
+                                navigator.clipboard.writeText(
+                                  payment.payment_id
+                                );
                                 toast.success("Payment ID copied to clipboard");
                               }}
                               title="Copy Payment ID"
@@ -745,28 +963,42 @@ export default function BillingPage() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Total Payments</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Payments
+                      </p>
                       <p className="text-2xl font-bold">
                         {paymentHistory.length}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Spent
+                      </p>
                       <p className="text-2xl font-bold">
                         {formatCurrency(
                           paymentHistory
-                            .filter(p => p.status === "succeeded")
-                            .reduce((total, payment) => total + payment.total_amount, 0),
+                            .filter((p) => p.status === "succeeded")
+                            .reduce(
+                              (total, payment) => total + payment.total_amount,
+                              0
+                            ),
                           paymentHistory[0]?.currency || "USD"
                         )}
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Success Rate
+                      </p>
                       <p className="text-2xl font-bold">
                         {Math.round(
-                          (paymentHistory.filter(p => p.status === "succeeded").length / paymentHistory.length) * 100
-                        )}%
+                          (paymentHistory.filter(
+                            (p) => p.status === "succeeded"
+                          ).length /
+                            paymentHistory.length) *
+                            100
+                        )}
+                        %
                       </p>
                     </div>
                   </div>

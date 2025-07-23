@@ -272,7 +272,7 @@ export default function ImprovedImageUpload({
   return (
     <Card className="h-full hover:border-primary/30 transition-all duration-300 bg-gradient-to-br from-background to-background/50">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg flex items-center justify-between">
+        <CardTitle className="text-accent-foreground font-medium flex items-center justify-between">
           <div className="flex items-center gap-2">
             {icon || <Camera className="h-5 w-5 text-primary" />}
             {title}
