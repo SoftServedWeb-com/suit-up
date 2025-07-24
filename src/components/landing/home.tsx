@@ -49,7 +49,7 @@ export default async function Home2() {
               Elevate your Fashion Game
             </h1> */}
             <span className="font-medium text-md md:text-lg tracking-tight">
-              Welcome Bespoke Artists!
+              Home to bespoke artists!
             </span>
           </div>
           <div className="flex items-center gap-4">

@@ -877,7 +877,7 @@ export default function BillingPage() {
                     {paymentHistory.map((payment) => (
                       <div
                         key={payment.payment_id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                        className="flex items-center bg-background justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
@@ -912,7 +912,7 @@ export default function BillingPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <p className="font-semibold text-lg">
+                            <p className="font-serif font-semibold text-lg">
                               {formatCurrency(
                                 payment.total_amount,
                                 payment.currency

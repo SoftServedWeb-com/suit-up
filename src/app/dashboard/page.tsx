@@ -602,7 +602,7 @@ export default function Dashboard() {
                     Processing Requests
                   </CardTitle>
                   <CardDescription>
-                    Your try-on requests are being processed by AI. This usually
+                    Your fit is being tailored. This usually
                     takes 20-40 seconds.
                   </CardDescription>
                 </CardHeader>
@@ -617,11 +617,11 @@ export default function Dashboard() {
                           {getStatusIcon(req.status)}
                           <span className="font-medium">
                             {req.status === "submitted"
-                              ? "Submitted to AI"
+                              ? "Tailoring your fit..."
                               : req.status === "PENDING"
-                              ? "In Queue"
+                              ? "Waiting for the fit..."
                               : req.status === "PROCESSING"
-                              ? "Generating..."
+                              ? "Find the fit..."
                               : req.status}
                           </span>
                         </div>
