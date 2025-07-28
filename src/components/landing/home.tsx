@@ -34,7 +34,7 @@ export default async function Home2() {
             webkit-playsinline="true"
             x-webkit-airplay="allow"
             // Preload for better iOS performance
-            preload="metadata"
+            preload="auto"
             // Add poster for fallback
             // poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
             // Additional iOS compatibility
@@ -74,9 +74,9 @@ export default async function Home2() {
                 Live Try-On
               </Link>
             ) : (
-              <SignInButton mode="modal">
-                <Button className="btn btn-primary underline hover:no-underline cursor-pointer" variant={"secondary"}>Sign In</Button>
-              </SignInButton>
+                <Button className="btn btn-primary underline hover:no-underline cursor-pointer" variant={"secondary"}>Invite Only</Button>
+              // <SignInButton mode="modal">
+              // </SignInButton>
             )}
           </div>
         </div>
