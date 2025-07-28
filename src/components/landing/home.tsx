@@ -22,40 +22,31 @@ export default async function Home2() {
       <div className="bg-background h-[92vh] md:h-[97vh] relative">
         <div className="absolute inset-0 top-0 bottom-0 z-5 w-full h-full">
           {" "}
-          {/* <video
-            src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4"}
+          <video
+            src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4#t=0.001"}
             className="w-full h-full object-cover z-7"
             playsInline
             loop
             autoPlay
             muted
+
             // iOS specific attributes
             webkit-playsinline="true"
             x-webkit-airplay="allow"
             // Preload for better iOS performance
             preload="metadata"
             // Add poster for fallback
-            poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
+            // poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
             // Additional iOS compatibility
             controls={false}
             disablePictureInPicture
-            onLoadStart={() => {
-              // Force play on iOS when video loads
-              const video = document.querySelector('video');
-              if (video) {
-                video.play().catch(() => {
-                  // Silently handle autoplay prevention
-                  console.log('Autoplay prevented on iOS');
-                });
-              }
-            }}
-          /> */}
-          <VideoPlayer
+          />
+          {/* <VideoPlayer
             src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4"}
             poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
             className="w-full h-full object-cover z-7"
         
-          />
+          /> */}
           <div className="absolute inset-0 w-full h-full object-contain z-8 overflow-hidden">
             {todaysOverlay}
           </div>
@@ -84,7 +75,7 @@ export default async function Home2() {
               </Link>
             ) : (
               <SignInButton mode="modal">
-                <Button className="btn btn-primary underline hover:no-underline cursor-pointer" variant={"ghost"}>Sign In</Button>
+                <Button className="btn btn-primary underline hover:no-underline cursor-pointer" variant={"secondary"}>Sign In</Button>
               </SignInButton>
             )}
           </div>

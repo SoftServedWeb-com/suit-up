@@ -72,6 +72,7 @@ export default function VideoPlayer({ src, className, poster }: VideoPlayerProps
       preload="metadata"
       poster={poster}
       controls={false}
+      controlsList='nodownload nofullscreen noremoteplayback'
       disablePictureInPicture
       style={{
         // Ensure video covers the container on iOS
