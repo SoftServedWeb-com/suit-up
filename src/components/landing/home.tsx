@@ -1,3 +1,5 @@
+'us'
+
 import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
@@ -6,6 +8,7 @@ import Footer from "../footer";
 import { Button } from "../ui/button";
 import { redirect } from "next/navigation";
 import { getTodaysOverlay } from "@/lib/colors-switch";
+import VideoPlayer from "../video-fix";
 
 export default async function Home2() {
   const { userId } = await auth();
@@ -14,23 +17,45 @@ export default async function Home2() {
   const todaysOverlay = getTodaysOverlay();
 
 
-  // if (userId) {
-  //   return redirect(`/dashboard`);
-  // }
-
   return (
     <div className="h-fit overflow-hidden rounded-sm border border-border relative ">
       <div className="bg-background h-[92vh] md:h-[97vh] relative">
         <div className="absolute inset-0 top-0 bottom-0 z-5 w-full h-full">
           {" "}
-          <video
+          {/* <video
             src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4"}
             className="w-full h-full object-cover z-7"
             playsInline
             loop
             autoPlay
             muted
-          ></video>
+            // iOS specific attributes
+            webkit-playsinline="true"
+            x-webkit-airplay="allow"
+            // Preload for better iOS performance
+            preload="metadata"
+            // Add poster for fallback
+            poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
+            // Additional iOS compatibility
+            controls={false}
+            disablePictureInPicture
+            onLoadStart={() => {
+              // Force play on iOS when video loads
+              const video = document.querySelector('video');
+              if (video) {
+                video.play().catch(() => {
+                  // Silently handle autoplay prevention
+                  console.log('Autoplay prevented on iOS');
+                });
+              }
+            }}
+          /> */}
+          <VideoPlayer
+            src={"https://res.cloudinary.com/duwh0ork4/video/upload/v1753200373/video_ycgfzh.mp4"}
+            poster="https://res.cloudinary.com/duwh0ork4/image/upload/v1753707205/fallback_rlsvmr.png"
+            className="w-full h-full object-cover z-7"
+        
+          />
           <div className="absolute inset-0 w-full h-full object-contain z-8 overflow-hidden">
             {todaysOverlay}
           </div>
