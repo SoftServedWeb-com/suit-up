@@ -13,9 +13,9 @@ import {
   Download,
   Share,
   AlertTriangle,
-  TestTube,
   Zap,
-  Layers,
+  ArrowLeft,
+  TestTube,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,13 +58,22 @@ interface TryOnRequest {
   updatedAt: string;
 }
 
-interface ProcessingRequest {
+interface BetaResponse {
+  success: boolean;
   requestId: string;
+  predictionId: string;
   status: string;
-  startTime: number;
+  resultImageUrl?: string;
+  message: string;
+  creditsRemaining: number;
+  provider: string;
+  textResponse?: string;
+  type?: string;
+  error?: string;
+  details?: string;
 }
 
-export default function Dashboard() {
+export default function DashboardBeta() {
   const [modelImage, setModelImage] = useState<File | null>(null);
   const [garmentImage, setGarmentImage] = useState<File | null>(null);
   const [selectedModelImageUrl, setSelectedModelImageUrl] = useState<
@@ -76,10 +85,8 @@ export default function Dashboard() {
   const [category, setCategory] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Processing states
-  const [processingRequests, setProcessingRequests] = useState<
-    ProcessingRequest[]
-  >([]);
+  // Beta-specific states
+  const [betaResults, setBetaResults] = useState<BetaResponse[]>([]);
   const [allRequests, setAllRequests] = useState<TryOnRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,7 +100,7 @@ export default function Dashboard() {
     null
   );
 
-  // Load user's try-on history on component mount
+  // Load user's try-on history on component mount (filter for beta/gemini requests)
   useEffect(() => {
     loadTryOnHistory();
   }, []);
@@ -102,12 +109,14 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       const response = await fetch("/api/try-on/status-history");
-      console.log("Get all Status Update :", response.status);
-
+      
       if (response.ok) {
         const data = await response.json();
-        console.log("Get all Status Update Data :", JSON.stringify(data));
-        setAllRequests(data.requests);
+        // Filter for Gemini/beta requests (those with predictionId starting with 'gemini-')
+        const betaRequests = data.requests.filter((req: TryOnRequest) => 
+          req.predictionId.startsWith('gemini-')
+        );
+        setAllRequests(betaRequests);
       } else {
         console.error("Failed to load history:", response.statusText);
       }
@@ -118,9 +127,7 @@ export default function Dashboard() {
     }
   };
 
-  // Helper function to convert URL to File object for API
-
-  const handleTryOn = async () => {
+  const handleBetaTryOn = async () => {
     const hasModelImage = modelImage || selectedModelImageUrl;
     const hasGarmentImage = garmentImage || selectedGarmentImageUrl;
 
@@ -151,37 +158,73 @@ export default function Dashboard() {
 
       formData.append("category", category);
 
-      console.log("Submitting try-on request...");
+      console.log("Submitting beta try-on request...");
 
-      const response = await fetch("/api/try-on", {
+      const response = await fetch("/api/try-on-beta", {
         method: "POST",
         body: formData,
       });
 
-      const data = await response.json();
+      const data: BetaResponse = await response.json();
 
-      if (!response.ok) {
-        // Handle subscription-related errors
-        if (data.type === "SUBSCRIPTION_LIMIT") {
-          setSubscriptionError(data.error);
-          return;
-        }
-        throw new Error(data.error || "Failed to submit try-on request");
+       if (!response.ok) {
+         // Handle subscription-related errors
+         if (data.type === "SUBSCRIPTION_LIMIT") {
+           setSubscriptionError(data.error || "Subscription limit reached");
+           return;
+         }
+         
+         // Handle rate limiting errors
+         if (data.type === "RATE_LIMIT" || data.type === "QUOTA_EXCEEDED") {
+           const errorMessage = data.error || "API rate limit exceeded";
+           const details = data.details ? `\n\n${data.details}` : "";
+           toast.error("Rate Limit Exceeded", {
+             description: errorMessage + details,
+             duration: 8000,
+           });
+           return;
+         }
+         
+         // Handle authentication errors
+         if (data.type === "AUTH_ERROR") {
+           toast.error("API Configuration Error", {
+             description: data.error || "Invalid API key configuration",
+             duration: 6000,
+           });
+           return;
+         }
+         
+         throw new Error(data.error || "Failed to submit beta try-on request");
+       }
+
+      console.log("Beta request completed successfully:", data);
+
+      // Add to beta results
+      setBetaResults((prev) => [data, ...prev]);
+
+      // Show success toast with provider info
+      toast.success("Virtual Try-On Complete! 🎉", {
+        description: `Generated using ${data.provider === 'gemini' ? 'Google Gemini AI' : data.provider}. Credits remaining: ${data.creditsRemaining}`,
+      });
+
+      // If we have a result image, show the result modal
+      if (data.resultImageUrl) {
+        const mockRequest: TryOnRequest = {
+          id: data.requestId,
+          predictionId: data.predictionId,
+          modelImageUrl: selectedModelImageUrl || URL.createObjectURL(modelImage!),
+          garmentImageUrl: selectedGarmentImageUrl || URL.createObjectURL(garmentImage!),
+          category,
+          status: "COMPLETED",
+          resultImageUrl: data.resultImageUrl,
+          creditsUsed: 1,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        setCurrentResult(mockRequest);
+        setShowResultModal(true);
       }
-
-      console.log("Request submitted successfully:", data);
-
-      // Add to processing queue
-      const newProcessingRequest: ProcessingRequest = {
-        requestId: data.requestId,
-        status: "submitted",
-        startTime: Date.now(),
-      };
-
-      setProcessingRequests((prev) => [...prev, newProcessingRequest]);
-
-      // Start polling for this request
-      startPolling(data.requestId);
 
       // Clear form
       setModelImage(null);
@@ -192,100 +235,17 @@ export default function Dashboard() {
 
       // Reload history to include the new request
       loadTryOnHistory();
+
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Beta try-on error:", error);
       toast.error(
         error instanceof Error
           ? error.message
-          : "Failed to submit try-on request. Please try again."
+          : "Failed to process beta try-on request. Please try again."
       );
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const startPolling = (requestId: string) => {
-    console.log("Request ID : ", requestId);
-    const pollInterval = setInterval(async () => {
-      try {
-        const response = await fetch(
-          `/api/try-on/status?requestId=${requestId}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-
-          console.log("Polling status:", data.status);
-
-          // Update processing request status
-          setProcessingRequests((prev) =>
-            prev.map((req) =>
-              req.requestId === requestId
-                ? { ...req, status: data.status }
-                : req
-            )
-          );
-
-          // If completed or failed, stop polling and update results
-          if (data.status === "COMPLETED" || data.status === "FAILED") {
-            clearInterval(pollInterval);
-
-            // Remove from processing queue
-            setProcessingRequests((prev) =>
-              prev.filter((req) => req.requestId !== requestId)
-            );
-
-            // Reload history to get updated data
-            await loadTryOnHistory();
-
-            // Show result modal if completed successfully
-            if (data.status === "COMPLETED" && data.resultImageUrl) {
-              const completedRequest = await getRequestById(requestId);
-              if (completedRequest) {
-                setCurrentResult(completedRequest);
-                setShowResultModal(true);
-              }
-            }
-          }
-        } else {
-          console.error("Status check failed:", response.statusText);
-        }
-      } catch (error) {
-        console.error("Polling error:", error);
-      }
-    }, 5000); // Poll every 5 seconds
-
-    // Stop polling after 3 minutes (safety measure)
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      setProcessingRequests((prev) =>
-        prev.filter((req) => req.requestId !== requestId)
-      );
-    }, 180000);
-  };
-
-  const getRequestById = async (
-    requestId: string
-  ): Promise<TryOnRequest | null> => {
-    try {
-      const response = await fetch(`/api/try-on/status?requestId=${requestId}`);
-      if (response.ok) {
-        const data = await response.json();
-        // Find the request in our local state or reconstruct it
-        const request = allRequests.find((req) => req.id === requestId);
-        if (request && data.resultImageUrl) {
-          return {
-            ...request,
-            status: "COMPLETED",
-            resultImageUrl: data.resultImageUrl,
-            processingTime: data.processingTime,
-          };
-        }
-      }
-    } catch (error) {
-      console.error("Error getting request:", error);
-    }
-    return null;
   };
 
   const handleDownload = async (imageUrl: string) => {
@@ -301,13 +261,15 @@ export default function Dashboard() {
 
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `trialRoomStudio_${Date.now()}.png`;
+      link.download = `trialRoomStudio_gemini_${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
       // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success("Download complete! 📥");
     } catch (error) {
       console.error("Error downloading image:", error);
       toast.error("Download failed", {
@@ -322,15 +284,17 @@ export default function Dashboard() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "My Virtual Try-On Result",
-          text: "Check out how this outfit looks on me!",
+          title: "My Virtual Try-On Result (Beta - Gemini AI)",
+          text: "Check out how this outfit looks on me! Generated with Google Gemini AI.",
           url: imageUrl,
         });
       } catch (error) {
         navigator.clipboard.writeText(imageUrl);
+        toast.success("Link copied to clipboard! 📋");
       }
     } else {
       navigator.clipboard.writeText(imageUrl);
+      toast.success("Link copied to clipboard! 📋");
     }
   };
 
@@ -374,122 +338,76 @@ export default function Dashboard() {
     hasModelInput && hasGarmentInput && category && !isSubmitting;
 
   return (
-    <div className="min-h-screen  bg-background">
+    <div className="min-h-screen bg-background">
       <Header />
 
       {/* Floating Subscription Indicator */}
       <FloatingSubscriptionIndicator />
 
       <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
-        <FashionQuote />
-        
-        {/* Beta Labs Section */}
+        {/* Beta Header */}
         <div className="mb-8">
-          <h2 className="text-xl font-serif tracking-tight text-foreground mb-4 flex items-center gap-2">
-            <TestTube className="h-5 w-5 text-primary" />
-            Beta Labs
-          </h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Experiment with cutting-edge AI models for virtual try-on. Compare results across different providers.
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Main Dashboard
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-2">
+              <TestTube className="h-6 w-6 text-primary" />
+              <h1 className="text-3xl font-serif tracking-tight text-foreground">
+                Beta Lab
+              </h1>
+            </div>
+            <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+              <Zap className="h-3 w-3 mr-1" />
+              Google Gemini AI
+            </Badge>
+          </div>
+          
+          <p className="text-muted-foreground max-w-2xl">
+            Experience next-generation virtual try-on powered by Google's Gemini 2.5 Flash Image Preview model. 
+            This experimental feature provides instant results with advanced AI capabilities.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Google Gemini Beta */}
-            <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="h-4 w-4 text-purple-600" />
-                      <h3 className="font-semibold text-purple-900 dark:text-purple-100">
-                        Google Gemini AI
-                      </h3>
-                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
-                        Nano Banana
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-4">
-                      Instant image generation with Gemini 2.5 Flash Image Preview. Multi-image input support.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-purple-600 mb-4">
-                      <span className="bg-purple-100 px-2 py-1 rounded">Instant Results</span>
-                      <span className="bg-purple-100 px-2 py-1 rounded">Multi-Modal</span>
-                      <span className="bg-purple-100 px-2 py-1 rounded">Text + Images</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/dashboard-beta">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-purple-300 text-purple-700 hover:bg-purple-100 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Try Gemini Lab
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* BytePlus ModelArk Beta */}
-            <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Layers className="h-4 w-4 text-orange-600" />
-                      <h3 className="font-semibold text-orange-900 dark:text-orange-100">
-                        BytePlus ModelArk
-                      </h3>
-                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
-                        Seedream 4.0
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-4">
-                      High-resolution 2K image generation with Seedream 4.0. Advanced image-to-image capabilities.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-orange-600 mb-4">
-                      <span className="bg-orange-100 px-2 py-1 rounded">2K Resolution</span>
-                      <span className="bg-orange-100 px-2 py-1 rounded">Image-to-Image</span>
-                      <span className="bg-orange-100 px-2 py-1 rounded">High Quality</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/dashboard-byteplus">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                  >
-                    <Layers className="h-4 w-4 mr-2" />
-                    Try BytePlus Lab
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Beta Info Alert */}
+          <Alert className="mt-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+            <TestTube className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
+              <strong>Beta Feature:</strong> This uses Google Gemini AI for instant image generation. 
+              Results may vary from our main try-on system. Your feedback helps us improve!
+            </AlertDescription>
+          </Alert>
         </div>
+
+        <FashionQuote />
         
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
-            <div className="">
+            <div>
               <p className="text-2xl font-serif tracking-tight text-foreground">
-                Tailor Board
+                Gemini Tailor Board
               </p>
               <span className="opacity-70 text-sm text-muted-foreground">
-                Create and manage your styles
+                Instant AI-powered virtual try-on
               </span>
             </div>
-            <TabsList className="glass-card ">
+            <TabsList className="glass-card">
               <TabsTrigger
                 value="try-on"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                Try-On
+                Beta Try-On
               </TabsTrigger>
               <TabsTrigger
                 value="history"
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                History ({allRequests.length})
+                Beta History ({allRequests.length})
               </TabsTrigger>
             </TabsList>
           </div>
@@ -505,17 +423,21 @@ export default function Dashboard() {
               </Alert>
             )}
 
-            {/* Latest Result Preview (Top Section) */}
-            {completedRequests.length > 0 && !processingRequests.length && (
+            {/* Latest Beta Result Preview */}
+            {completedRequests.length > 0 && (
               <Card className="border-ring bg-background">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-accent-foreground font-medium text-lg tracking-tight ">
-                        Recent Trial
+                      <CardTitle className="text-accent-foreground font-medium text-lg tracking-tight flex items-center gap-2">
+                        Latest Gemini Result
+                        <Badge variant="secondary" className="text-xs">
+                          <Zap className="h-3 w-3 mr-1" />
+                          AI Generated
+                        </Badge>
                       </CardTitle>
                       <CardDescription className="text-sm text-muted-foreground mt-1">
-                        Click image to view full size
+                        Generated instantly with Google Gemini AI
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1 bg-green-200/50 rounded-full">
@@ -526,7 +448,7 @@ export default function Dashboard() {
                 </CardHeader>
 
                 <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center  ">
+                  <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 items-center">
                     {/* Main Result - Hero Section */}
                     <div className="lg:col-span-3 text-center">
                       <div
@@ -541,10 +463,15 @@ export default function Dashboard() {
                             width={1080}
                             height={1080}
                             src={completedRequests[0].resultImageUrl!}
-                            alt="Virtual try-on result"
+                            alt="Gemini AI virtual try-on result"
                             className="w-full max-w-xs mx-auto rounded-lg border border-border group-hover:border-primary transition-all duration-200 shadow-sm group-hover:shadow-md"
                           />
-                          {/* Subtle zoom hint */}
+                          {/* AI Badge Overlay */}
+                          <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                            <Zap className="h-3 w-3" />
+                            Gemini AI
+                          </div>
+                          {/* Zoom hint */}
                           <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <ZoomIn className="h-3 w-3 text-foreground" />
                           </div>
@@ -556,8 +483,9 @@ export default function Dashboard() {
                     <div className="lg:col-span-2 space-y-6">
                       {/* Virtual Trial */}
                       <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-foreground">
-                          Virtual Trial Room
+                        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                          <TestTube className="h-4 w-4" />
+                          Beta Trial Room
                         </h3>
 
                         <div className="flex items-center gap-4">
@@ -569,26 +497,12 @@ export default function Dashboard() {
                               alt="Original"
                               className="w-22 h-22 object-cover rounded-md border border-border"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              You
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">You</p>
                           </div>
 
                           <div className="flex-1 h-px bg-border"></div>
                           <div className="text-muted-foreground">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                              />
-                            </svg>
+                            <Zap className="w-4 h-4" />
                           </div>
                           <div className="flex-1 h-px bg-border"></div>
 
@@ -600,9 +514,7 @@ export default function Dashboard() {
                               alt="Garment"
                               className="w-22 h-22 object-cover rounded-md border border-border"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Garment
-                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">Garment</p>
                           </div>
                         </div>
                       </div>
@@ -610,14 +522,14 @@ export default function Dashboard() {
                       {/* Quick Stats */}
                       <div className="space-y-2">
                         <div className="space-y-1 text-sm text-muted-foreground">
-                          {completedRequests[0].processingTime && (
-                            <div className="flex justify-between">
-                              <span>Processing time</span>
-                              <span>
-                                {completedRequests[0].processingTime}s
-                              </span>
-                            </div>
-                          )}
+                          <div className="flex justify-between">
+                            <span>AI Provider</span>
+                            <span className="text-purple-600 font-medium">Google Gemini</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Processing</span>
+                            <span className="text-green-600 font-medium">Instant</span>
+                          </div>
                           {completedRequests[0].creditsUsed && (
                             <div className="flex justify-between">
                               <span>Credits used</span>
@@ -631,7 +543,7 @@ export default function Dashboard() {
                       <div className="space-y-3">
                         <Button
                           size="sm"
-                          className="w-full"
+                          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                           onClick={() =>
                             handleDownload(completedRequests[0].resultImageUrl!)
                           }
@@ -645,7 +557,7 @@ export default function Dashboard() {
                           ) : (
                             <>
                               <Download className="h-4 w-4 mr-2" />
-                              Download Result
+                              Download Gemini Result
                             </>
                           )}
                         </Button>
@@ -679,47 +591,6 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {/* Processing Queue */}
-            {processingRequests.length > 0 && (
-              <Card className="glass-card border-primary/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                    Processing Requests
-                  </CardTitle>
-                  <CardDescription>
-                    Your fit is being tailored. This usually
-                    takes 20-40 seconds.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {processingRequests.map((req) => (
-                      <div
-                        key={req.requestId}
-                        className="flex items-center justify-between p-3 bg-primary/5 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          {getStatusIcon(req.status)}
-                          <span className="font-medium">
-                            {req.status === "submitted"
-                              ? "Tailoring your fit..."
-                              : req.status === "PENDING"
-                              ? "Waiting for the fit..."
-                              : req.status === "PROCESSING"
-                              ? "Find the fit..."
-                              : req.status}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {Math.floor((Date.now() - req.startTime) / 1000)}s
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -775,11 +646,11 @@ export default function Dashboard() {
             {/* Generate Button */}
             <div className="flex justify-center">
               <Button
-                onClick={handleTryOn}
+                onClick={handleBetaTryOn}
                 disabled={!isReadyToGenerate}
                 size="lg"
                 className={`
-                  relative overflow-hidden bg-primary hover:bg-primary/90 text-primary-foreground
+                  relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white
                   px-8 py-3 rounded-xl font-semibold transition-all duration-300
                   ${
                     isReadyToGenerate
@@ -791,12 +662,12 @@ export default function Dashboard() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Submitting...
+                    Generating with Gemini AI...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Generate Try-On
+                    <Zap className="mr-2 h-5 w-5" />
+                    Generate Beta Try-On
                   </>
                 )}
               </Button>
@@ -808,16 +679,23 @@ export default function Dashboard() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-card-foreground">
-                      Try-On History
+                    <CardTitle className="text-card-foreground flex items-center gap-2">
+                      <TestTube className="h-5 w-5" />
+                      Beta Try-On History
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                      View and manage your virtual try-on sessions
+                      View your Google Gemini AI virtual try-on sessions
                     </CardDescription>
                   </div>
-                  <Badge variant="secondary" className="text-sm">
-                    {allRequests.length} sessions
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-sm">
+                      {allRequests.length} beta sessions
+                    </Badge>
+                    <Badge variant="outline" className="text-sm bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Gemini AI
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
 
@@ -825,20 +703,18 @@ export default function Dashboard() {
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-4" />
-                    <p className="text-muted-foreground">
-                      Loading your sessions...
-                    </p>
+                    <p className="text-muted-foreground">Loading your beta sessions...</p>
                   </div>
                 ) : allRequests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16">
-                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                      <Sparkles className="h-8 w-8 text-muted-foreground" />
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-100 to-blue-100 flex items-center justify-center mb-4">
+                      <TestTube className="h-8 w-8 text-purple-600" />
                     </div>
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      No sessions yet
+                      No beta sessions yet
                     </h3>
                     <p className="text-muted-foreground text-center max-w-sm">
-                      Create your first virtual try-on to see your results here
+                      Try your first Google Gemini AI virtual try-on to see results here
                     </p>
                   </div>
                 ) : (
@@ -857,85 +733,8 @@ export default function Dashboard() {
                           }
                         }}
                       >
-                        {/* Mobile Layout */}
-                        <div className="block md:hidden space-y-3">
-                          {/* Header Row */}
-                          <div className="flex items-center justify-between">
-                            <Badge
-                              className={getStatusColor(request.status)}
-                              variant="outline"
-                            >
-                              {request.status}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(request.createdAt).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
-                                }
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Images Row */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={request.modelImageUrl}
-                                alt="You"
-                                className="w-12 h-12 object-cover rounded border border-border"
-                              />
-                              <span className="text-muted-foreground">+</span>
-                              <img
-                                src={request.garmentImageUrl}
-                                alt="Item"
-                                className="w-12 h-12 object-cover rounded border border-border"
-                              />
-                            </div>
-
-                            {request.status === "COMPLETED" &&
-                            request.resultImageUrl ? (
-                              <div className="relative">
-                                <img
-                                  src={request.resultImageUrl}
-                                  alt="Result"
-                                  className="w-16 h-16 object-cover rounded-lg border border-border"
-                                />
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
-                              </div>
-                            ) : (
-                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                                {getStatusIcon(request.status)}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Stats Row */}
-                          <div className="flex items-center justify-between text-sm text-muted-foreground">
-                            <div className="flex items-center gap-3">
-                              {request.processingTime && (
-                                <span>{request.processingTime}s</span>
-                              )}
-                              {request.creditsUsed && (
-                                <span>{request.creditsUsed} credits</span>
-                              )}
-                            </div>
-                            {request.status === "COMPLETED" &&
-                              request.resultImageUrl && (
-                                <ZoomIn className="h-4 w-4 group-hover:text-primary transition-colors" />
-                              )}
-                          </div>
-
-                          {request.errorMessage && (
-                            <p className="text-sm text-destructive">
-                              {request.errorMessage}
-                            </p>
-                          )}
-                        </div>
-
                         {/* Desktop Layout */}
-                        <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                           {/* Status & Result Preview */}
                           <div className="flex-shrink-0">
                             {request.status === "COMPLETED" &&
@@ -943,10 +742,13 @@ export default function Dashboard() {
                               <div className="relative">
                                 <img
                                   src={request.resultImageUrl}
-                                  alt="Result"
+                                  alt="Beta Result"
                                   className="w-16 h-16 object-cover rounded-lg border border-border"
                                 />
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
+                                {/* Gemini AI Badge */}
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full border-2 border-background flex items-center justify-center">
+                                  <Zap className="h-3 w-3 text-white" />
+                                </div>
                               </div>
                             ) : (
                               <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
@@ -964,6 +766,10 @@ export default function Dashboard() {
                               >
                                 {request.status}
                               </Badge>
+                              <Badge variant="secondary" className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                                <Zap className="h-3 w-3 mr-1" />
+                                Gemini
+                              </Badge>
                               <span className="text-sm text-muted-foreground">
                                 {new Date(request.createdAt).toLocaleDateString(
                                   "en-US",
@@ -978,9 +784,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              {request.processingTime && (
-                                <span>{request.processingTime}s</span>
-                              )}
+                              <span className="text-green-600 font-medium">Instant Generation</span>
                               {request.creditsUsed && (
                                 <span>{request.creditsUsed} credits</span>
                               )}
@@ -1001,9 +805,7 @@ export default function Dashboard() {
                                 alt="You"
                                 className="w-8 h-8 object-cover rounded border border-border"
                               />
-                              <span className="text-muted-foreground text-xs">
-                                +
-                              </span>
+                              <Zap className="h-3 w-3 text-muted-foreground" />
                               <img
                                 src={request.garmentImageUrl}
                                 alt="Item"
@@ -1039,7 +841,8 @@ export default function Dashboard() {
         <DialogContent className="w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-medium font-serif text-primary">
-              Trial Room
+              <TestTube className="h-5 w-5" />
+              Beta Trial Room - Gemini AI
             </DialogTitle>
           </DialogHeader>
           {currentResult && (
@@ -1067,12 +870,20 @@ export default function Dashboard() {
 
                 {/* Result */}
                 <div className="md:col-span-2">
-                  <h4 className="font-medium mb-2">Final Result</h4>
-                  <img
-                    src={currentResult.resultImageUrl}
-                    alt="Try-on result"
-                    className="w-full max-h-[60vh] object-contain rounded-lg border mx-auto"
-                  />
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-medium">Gemini AI Result</h4>
+                    <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Google Gemini
+                    </Badge>
+                  </div>
+                  <div className="relative">
+                    <img
+                      src={currentResult.resultImageUrl}
+                      alt="Beta try-on result"
+                      className="w-full max-h-[60vh] object-contain rounded-lg border mx-auto"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1080,7 +891,7 @@ export default function Dashboard() {
               <div className="flex gap-3 justify-center">
                 <Button
                   onClick={() => handleDownload(currentResult.resultImageUrl!)}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Download
@@ -1096,10 +907,12 @@ export default function Dashboard() {
 
               {/* Metadata */}
               <div className="text-center text-sm text-muted-foreground space-y-1">
+                <p className="flex items-center justify-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Generated with Google Gemini 2.5 Flash Image Preview
+                </p>
                 <p>Category: {currentResult.category}</p>
-                {currentResult.processingTime && (
-                  <p>Processing time: {currentResult.processingTime} seconds</p>
-                )}
+                <p>Processing: Instant generation</p>
                 {currentResult.creditsUsed && (
                   <p>Credits used: {currentResult.creditsUsed}</p>
                 )}
