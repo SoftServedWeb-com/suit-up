@@ -193,6 +193,15 @@ export default function DashboardBeta() {
            });
            return;
          }
+
+         // Handle safety filter blocks
+         if (data.type === "SAFETY_FILTER") {
+           toast.error("Content Blocked", {
+             description: data.error || "Content was blocked by safety filters",
+             duration: 8000,
+           });
+           return;
+         }
          
          throw new Error(data.error || "Failed to submit beta try-on request");
        }

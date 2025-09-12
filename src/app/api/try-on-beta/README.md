@@ -43,12 +43,15 @@ Same as the main try-on API:
 - All existing S3 and database environment variables
 
 ## Features
-- Real-time image generation
+- Real-time image generation with improved prompting
+- Category-specific optimization for better results
 - Maintains person's physical characteristics
-- Natural garment fitting
+- Natural garment fitting with detailed instructions
 - High-quality photorealistic results
+- Configurable safety settings for clothing try-on
+- Advanced error handling including safety filter detection
 - Same credit system as main API
-- Error handling and validation
+- Step-by-step generation instructions
 
 ## Usage Notes
 - This is a beta feature for testing Google Gemini's image generation capabilities

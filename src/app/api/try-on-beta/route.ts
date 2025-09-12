@@ -3,7 +3,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
-import { GoogleGenAI, HarmBlockMethod, HarmBlockThreshold, SafetyFilterLevel } from "@google/genai";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import mime from "mime";
 import crypto from "crypto";
 
@@ -227,26 +227,42 @@ export async function POST(request: Request) {
     // Use Google Gemini 2.5 Flash Image Preview for virtual try-on
     const model = 'gemini-2.5-flash-image-preview';
     
-    // Create prompt with multiple input images (following the "Working with Multiple Input Images" pattern)
-    const prompt = [
-      { 
-        text: `CHnage the person wear this garment. Refer {"Garment Image"}.
-        Person Image is {"Person Image"}.
-        Donot change the person's pose, body proportions, facial features, and background.
-        Make sure the garment looks natural and well-fitted.
-        Preserve skin tone, hair, and other physical characteristics of the person.
-        `
-      },
+    // Try different approaches based on category for better results
+    let detailedPrompt: string;
+    let prompt: any[];
+
+    // Approach 1: Image editing style (better for clothing replacement)
+    if (category.toLowerCase().includes('top') || category.toLowerCase().includes('shirt') || category.toLowerCase().includes('dress')) {
+      detailedPrompt = `Using the person in the first image, replace their current ${category} with the exact ${category} shown in the second image. 
+      Keep everything else identical: same person, same pose, same facial expression, same background, same lighting. Only change the clothing item.
+      Make the new ${category} fit naturally on their body with proper draping and shadows. Ensure the fabric texture, color, and style match the reference garment exactly.
+      Generate a photorealistic result where the clothing swap looks completely natural and seamless.`;
+    } else {
+      // Approach 2: Composition style for other items
+      detailedPrompt = `Create a realistic virtual try-on showing the person from the first image wearing the ${category} from the second image.
+        PRESERVE EXACTLY:
+        - Person's pose, facial features, skin tone, hair
+        - Background and lighting conditions  
+        - Body proportions and positioning
+
+        CHANGE ONLY:
+        - Replace their current ${category} with the one from the second image
+        - Ensure proper fit, draping, and realistic shadows
+        - Match the exact fabric, color, and style from the reference
+
+        Result should be photorealistic with seamless clothing integration.`;
+    }
+
+    prompt = [
+      { text: detailedPrompt },
       {
         inlineData: {
-          name: "Person Image",
           mimeType: modelImageMimeType,
           data: modelImageBase64,
         },
       },
       {
         inlineData: {
-          name: "Garment Image",
           mimeType: garmentImageMimeType,
           data: garmentImageBase64,
         },
@@ -255,36 +271,104 @@ export async function POST(request: Request) {
 
     console.log("Sending request to Gemini AI for virtual try-on...");
 
+    // Safety mode configuration - can be adjusted based on needs
+    const SAFETY_MODE = process.env.GEMINI_SAFETY_MODE || 'BALANCED'; // OPTIONS: 'STRICT', 'BALANCED', 'RELAXED'
+    
+    let safetyThreshold;
+    switch (SAFETY_MODE) {
+      case 'STRICT':
+        safetyThreshold = HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE;
+        break;
+      case 'RELAXED':
+        safetyThreshold = HarmBlockThreshold.OFF;
+        break;
+      case 'BALANCED':
+      default:
+        safetyThreshold = HarmBlockThreshold.BLOCK_ONLY_HIGH;
+        break;
+    }
+
+    // Configure safety settings optimized for clothing try-on
+    console.log(`Using safety mode: ${SAFETY_MODE} with threshold: ${safetyThreshold}`);
+    const safetySettings = [
+      {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: safetyThreshold,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, 
+        threshold: safetyThreshold,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: safetyThreshold,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: safetyThreshold,
+      },
+      // Add image-specific categories for better clothing try-on
+      {
+        category: HarmCategory.HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT,
+        threshold: safetyThreshold,
+      },
+    ];
+
+    // Generation configuration for better image quality
+    const generationConfig = {
+      temperature: 0.4, // Lower temperature for more consistent results
+      topK: 32,
+      topP: 1,
+      maxOutputTokens: 8192,
+    };
+
     // Use retry mechanism for the API call
     const response = await retryWithBackoff(async () => {
       return await genAI.models.generateContent({
         model,
         contents: prompt,
-        config:{
-          safetySettings
-        }
+        config: {
+          safetySettings: safetySettings,
+          ...generationConfig,
+        },
       });
     }, 3, 2000); // 3 retries, starting with 2 second delay
 
-    console.log("Response from Gemini AI:", response.text);
+    console.log("Response from Gemini AI:", response);
 
     let generatedImageUrl: string | null = null;
     let textResponse = "";
 
+    // Check for safety filter blocks
+    if (response.promptFeedback?.blockReason) {
+      console.log("Request blocked by safety filters:", response.promptFeedback.blockReason);
+      throw new Error(`Content blocked by safety filters: ${response.promptFeedback.blockReason}. Try with different images or adjust the prompt.`);
+    }
+
     // Process the response (following the example pattern)
     if (response.candidates && response.candidates[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
+      const candidate = response.candidates[0];
+      
+      // Check if the candidate was blocked
+      if (candidate.finishReason === 'SAFETY') {
+        console.log("Response blocked by safety filters");
+        throw new Error("Generated content was blocked by safety filters. Please try with different images or ensure appropriate content.");
+      }
+
+      for (const part of candidate.content?.parts || []) {
         if (part.text) {
           textResponse += part.text;
           console.log("Received text response from Gemini:", part.text);
         } else if (part.inlineData) {
           const imageData = part.inlineData.data;
           if (imageData) {
-            console.log("Received generated image from Gemini", imageData);
+            console.log("Received generated image from Gemini - data length:", imageData.length);
             generatedImageUrl = await saveGeneratedImageToS3(imageData, 'image/png');
           }
         }
       }
+    } else {
+      console.log("No candidates found in response. Full response:", JSON.stringify(response, null, 2));
     }
 
     if (!generatedImageUrl) {
@@ -364,6 +448,16 @@ export async function POST(request: Request) {
         type: "AUTH_ERROR",
         provider: "gemini"
       }, { status: 401 });
+    }
+
+    // Handle safety filter blocks
+    if (error.message?.includes("safety filters") || error.message?.includes("blocked")) {
+      return NextResponse.json({ 
+        error: "Content was blocked by safety filters. Please try with different images or ensure appropriate content for virtual try-on.",
+        type: "SAFETY_FILTER",
+        provider: "gemini",
+        details: "The AI model's safety systems prevented generation. Try with clearer, appropriate clothing images."
+      }, { status: 400 });
     }
     
     return NextResponse.json({ 

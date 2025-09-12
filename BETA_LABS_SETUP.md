@@ -30,6 +30,10 @@ Add these to your `.env.local` file:
 # Google Gemini AI
 GEMINI_API_KEY=your_google_gemini_api_key
 
+# Optional: Gemini safety mode (STRICT, BALANCED, RELAXED)
+# BALANCED is recommended for clothing try-on
+GEMINI_SAFETY_MODE=BALANCED
+
 # BytePlus ModelArk
 ARK_API_KEY=your_byteplus_modelark_api_key
 
@@ -49,6 +53,19 @@ FASHN_API_KEY=your_fashn_api_key
 2. Sign in with your Google account
 3. Create a new API key
 4. Copy the key and add to `GEMINI_API_KEY`
+5. (Optional) Configure safety mode with `GEMINI_SAFETY_MODE`
+
+#### Safety Mode Configuration
+
+The Gemini integration supports three safety modes:
+
+| Mode | Threshold | Best For | Trade-offs |
+|------|-----------|----------|------------|
+| `STRICT` | `BLOCK_MEDIUM_AND_ABOVE` | High safety requirements | May block legitimate clothing images |
+| `BALANCED` | `BLOCK_ONLY_HIGH` | **Recommended for clothing** | Good balance of safety and functionality |
+| `RELAXED` | `OFF` | Maximum functionality | Minimal safety filtering |
+
+**Recommendation**: Use `BALANCED` mode (default) for clothing try-on as it provides the best balance between safety and functionality.
 
 ### BytePlus ModelArk
 1. Visit [BytePlus ModelArk Console](https://console.byteplus.com/modelark)
