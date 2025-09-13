@@ -16,6 +16,7 @@ import {
   TestTube,
   Zap,
   Layers,
+  Wand2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -383,18 +384,53 @@ export default function Dashboard() {
       <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
         <FashionQuote />
         
-        {/* Beta Labs Section */}
+        {/* Creative Studios Section */}
         <div className="mb-8">
           <h2 className="text-xl font-serif tracking-tight text-foreground mb-4 flex items-center gap-2">
             <TestTube className="h-5 w-5 text-primary" />
-            Beta Labs
+            Creative Studios
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Experiment with cutting-edge AI models for virtual try-on. Compare results across different providers.
+            Explore AI-powered creative tools for virtual try-on and image transformation.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Google Gemini Beta */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Prompt Studio - New Feature */}
+            <Card className="border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-pink-600" />
+                      <h3 className="font-semibold text-pink-900 dark:text-pink-100">
+                        Prompt Studio
+                      </h3>
+                      <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-800">
+                        NEW
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-pink-700 dark:text-pink-300 mb-4">
+                      Transform your images with AI-powered style prompts. Choose from vintage, artistic, professional styles and more.
+                    </p>
+                    <div className="flex flex-wrap gap-2 text-xs text-pink-600 mb-4">
+                      <span className="bg-pink-100 px-2 py-1 rounded">Style Transfer</span>
+                      <span className="bg-pink-100 px-2 py-1 rounded">8 Presets</span>
+                      <span className="bg-pink-100 px-2 py-1 rounded">Instant</span>
+                    </div>
+                  </div>
+                </div>
+                <Link href="/prompt-studio">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-pink-300 text-pink-700 hover:bg-pink-100 dark:border-pink-600 dark:text-pink-300 dark:hover:bg-pink-900/20"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Try Prompt Studio
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
             <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
@@ -405,7 +441,7 @@ export default function Dashboard() {
                         Google Gemini AI
                       </h3>
                       <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
-                        Nano Banana
+                        Beta
                       </Badge>
                     </div>
                     <p className="text-sm text-purple-700 dark:text-purple-300 mb-4">
@@ -414,7 +450,7 @@ export default function Dashboard() {
                     <div className="flex flex-wrap gap-2 text-xs text-purple-600 mb-4">
                       <span className="bg-purple-100 px-2 py-1 rounded">Instant Results</span>
                       <span className="bg-purple-100 px-2 py-1 rounded">Multi-Modal</span>
-                      <span className="bg-purple-100 px-2 py-1 rounded">Text + Images</span>
+                      <span className="bg-purple-100 px-2 py-1 rounded">Try-On</span>
                     </div>
                   </div>
                 </div>
@@ -430,7 +466,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* BytePlus ModelArk Beta */}
             <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 hover:shadow-md transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">
@@ -441,7 +476,7 @@ export default function Dashboard() {
                         BytePlus ModelArk
                       </h3>
                       <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
-                        Seedream 4.0
+                        Beta
                       </Badge>
                     </div>
                     <p className="text-sm text-orange-700 dark:text-orange-300 mb-4">
@@ -450,7 +485,7 @@ export default function Dashboard() {
                     <div className="flex flex-wrap gap-2 text-xs text-orange-600 mb-4">
                       <span className="bg-orange-100 px-2 py-1 rounded">2K Resolution</span>
                       <span className="bg-orange-100 px-2 py-1 rounded">Image-to-Image</span>
-                      <span className="bg-orange-100 px-2 py-1 rounded">High Quality</span>
+                      <span className="bg-orange-100 px-2 py-1 rounded">Try-On</span>
                     </div>
                   </div>
                 </div>
@@ -466,6 +501,7 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
+
         </div>
         
         <Tabs defaultValue="try-on" className="space-y-8">
