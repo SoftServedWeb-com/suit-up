@@ -390,119 +390,38 @@ export default function Dashboard() {
             <TestTube className="h-5 w-5 text-primary" />
             Creative Studios
           </h2>
-          <p className="text-sm text-muted-foreground mb-6">
+          <p className="text-sm text-muted-foreground mb-4">
             Explore AI-powered creative tools for virtual try-on and image transformation.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Prompt Studio - New Feature */}
-            <Card className="border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="h-4 w-4 text-pink-600" />
-                      <h3 className="font-semibold text-pink-900 dark:text-pink-100">
-                        Prompt Studio
-                      </h3>
-                      <Badge variant="secondary" className="text-xs bg-pink-100 text-pink-800">
-                        NEW
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-pink-700 dark:text-pink-300 mb-4">
-                      Transform your images with AI-powered style prompts. Choose from vintage, artistic, professional styles and more.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-pink-600 mb-4">
-                      <span className="bg-pink-100 px-2 py-1 rounded">Style Transfer</span>
-                      <span className="bg-pink-100 px-2 py-1 rounded">8 Presets</span>
-                      <span className="bg-pink-100 px-2 py-1 rounded">Instant</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/prompt-studio">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-pink-300 text-pink-700 hover:bg-pink-100 dark:border-pink-600 dark:text-pink-300 dark:hover:bg-pink-900/20"
-                  >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Try Prompt Studio
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="h-4 w-4 text-purple-600" />
-                      <h3 className="font-semibold text-purple-900 dark:text-purple-100">
-                        Google Gemini AI
-                      </h3>
-                      <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
-                        Beta
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-4">
-                      Instant image generation with Gemini 2.5 Flash Image Preview. Multi-image input support.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-purple-600 mb-4">
-                      <span className="bg-purple-100 px-2 py-1 rounded">Instant Results</span>
-                      <span className="bg-purple-100 px-2 py-1 rounded">Multi-Modal</span>
-                      <span className="bg-purple-100 px-2 py-1 rounded">Try-On</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/dashboard-beta">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-purple-300 text-purple-700 hover:bg-purple-100 dark:border-purple-600 dark:text-purple-300 dark:hover:bg-purple-900/20"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    Try Gemini Lab
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Layers className="h-4 w-4 text-orange-600" />
-                      <h3 className="font-semibold text-orange-900 dark:text-orange-100">
-                        BytePlus ModelArk
-                      </h3>
-                      <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
-                        Beta
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-orange-700 dark:text-orange-300 mb-4">
-                      High-resolution 2K image generation with Seedream 4.0. Advanced image-to-image capabilities.
-                    </p>
-                    <div className="flex flex-wrap gap-2 text-xs text-orange-600 mb-4">
-                      <span className="bg-orange-100 px-2 py-1 rounded">2K Resolution</span>
-                      <span className="bg-orange-100 px-2 py-1 rounded">Image-to-Image</span>
-                      <span className="bg-orange-100 px-2 py-1 rounded">Try-On</span>
-                    </div>
-                  </div>
-                </div>
-                <Link href="/dashboard-byteplus">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-600 dark:text-orange-300 dark:hover:bg-orange-900/20"
-                  >
-                    <Layers className="h-4 w-4 mr-2" />
-                    Try BytePlus Lab
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          <div className="flex gap-3 text-sm">
+            <Link href="/prompt-studio">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 px-3 text-muted-foreground hover:text-foreground"
+              >
+                <Sparkles className="h-3 w-3 mr-2" />
+                Prompt Studio
+              </Button>
+            </Link>
+            
+            <Link href="/dashboard-beta">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950/20"
+              >
+                <Zap className="h-3 w-3 mr-2" />
+                Gemini Lab
+                <Badge variant="secondary" className="ml-2 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                  Beta
+                </Badge>
+              </Button>
+            </Link>
           </div>
 
-        </div>
+        </div>  
         
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
