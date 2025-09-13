@@ -232,26 +232,31 @@ export async function POST(request: Request) {
     let prompt: any[];
 
     // Approach 1: Image editing style (better for clothing replacement)
-    if (category.toLowerCase().includes('top') || category.toLowerCase().includes('shirt') || category.toLowerCase().includes('dress')) {
-      detailedPrompt = `Using the person in the first image, replace their current ${category} with the exact ${category} shown in the second image. 
+    // if (category.toLowerCase().includes('top') || category.toLowerCase().includes('shirt') || category.toLowerCase().includes('dress')) {
+    //   detailedPrompt = `Using the person in the first image, replace their current ${category} with the exact ${category} shown in the second image. 
+    //   Keep everything else identical: same person, same pose, same facial expression, same background, same lighting. Only change the clothing item.
+    //   Make the new ${category} fit naturally on their body with proper draping and shadows. Ensure the fabric texture, color, and style match the reference garment exactly.
+    //   Generate a photorealistic result where the clothing swap looks completely natural and seamless.`;
+    // } else {
+    //   // Approach 2: Composition style for other items
+    //   detailedPrompt = `Create a realistic virtual try-on showing the person from the first image wearing the ${category} from the second image.
+    //     PRESERVE EXACTLY:
+    //     - Person's pose, facial features, skin tone, hair
+    //     - Background and lighting conditions  
+    //     - Body proportions and positioning
+
+    //     CHANGE ONLY:
+    //     - Replace their current ${category} with the one from the second image
+    //     - Ensure proper fit, draping, and realistic shadows
+    //     - Match the exact fabric, color, and style from the reference
+
+    //     Result should be photorealistic with seamless clothing integration.`;
+    // }
+
+    detailedPrompt=`Using the person in the first image, replace their current ${category} with the exact ${category} shown in the second image. 
       Keep everything else identical: same person, same pose, same facial expression, same background, same lighting. Only change the clothing item.
       Make the new ${category} fit naturally on their body with proper draping and shadows. Ensure the fabric texture, color, and style match the reference garment exactly.
       Generate a photorealistic result where the clothing swap looks completely natural and seamless.`;
-    } else {
-      // Approach 2: Composition style for other items
-      detailedPrompt = `Create a realistic virtual try-on showing the person from the first image wearing the ${category} from the second image.
-        PRESERVE EXACTLY:
-        - Person's pose, facial features, skin tone, hair
-        - Background and lighting conditions  
-        - Body proportions and positioning
-
-        CHANGE ONLY:
-        - Replace their current ${category} with the one from the second image
-        - Ensure proper fit, draping, and realistic shadows
-        - Match the exact fabric, color, and style from the reference
-
-        Result should be photorealistic with seamless clothing integration.`;
-    }
 
     prompt = [
       { text: detailedPrompt },
@@ -271,46 +276,23 @@ export async function POST(request: Request) {
 
     console.log("Sending request to Gemini AI for virtual try-on...");
 
-    // Safety mode configuration - can be adjusted based on needs
-    const SAFETY_MODE = process.env.GEMINI_SAFETY_MODE || 'BALANCED'; // OPTIONS: 'STRICT', 'BALANCED', 'RELAXED'
-    
-    let safetyThreshold;
-    switch (SAFETY_MODE) {
-      case 'STRICT':
-        safetyThreshold = HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE;
-        break;
-      case 'RELAXED':
-        safetyThreshold = HarmBlockThreshold.OFF;
-        break;
-      case 'BALANCED':
-      default:
-        safetyThreshold = HarmBlockThreshold.BLOCK_ONLY_HIGH;
-        break;
-    }
-
-    // Configure safety settings optimized for clothing try-on
-    console.log(`Using safety mode: ${SAFETY_MODE} with threshold: ${safetyThreshold}`);
+    // Configure safety settings to be less restrictive for clothing try-on
     const safetySettings = [
       {
         category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: safetyThreshold,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
       },
       {
         category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, 
-        threshold: safetyThreshold,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
       },
       {
         category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: safetyThreshold,
+        threshold: HarmBlockThreshold.OFF, // Keep this stricter for clothing
       },
       {
         category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: safetyThreshold,
-      },
-      // Add image-specific categories for better clothing try-on
-      {
-        category: HarmCategory.HARM_CATEGORY_IMAGE_SEXUALLY_EXPLICIT,
-        threshold: safetyThreshold,
+        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
       },
     ];
 
