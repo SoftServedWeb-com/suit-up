@@ -108,7 +108,13 @@ export default function Dashboard() {
       if (response.ok) {
         const data = await response.json();
         console.log("Get all Status Update Data :", JSON.stringify(data));
-        setAllRequests(data.requests);
+        
+        // Filter out requests with prompt categories (categories starting with "prompt:")
+        const filteredRequests = data.requests.filter((request: TryOnRequest) => 
+          !request.category.toLowerCase().startsWith("prompt:")
+        );
+        
+        setAllRequests(filteredRequests);
       } else {
         console.error("Failed to load history:", response.statusText);
       }
@@ -1051,7 +1057,10 @@ export default function Dashboard() {
 
               {/* Metadata */}
               <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Category: {currentResult.category}</p>
+                {/* Only show category if it's not a prompt category */}
+                {!currentResult.category.toLowerCase().startsWith("prompt:") && (
+                  <p>Category: {currentResult.category}</p>
+                )}
                 {currentResult.processingTime && (
                   <p>Processing time: {currentResult.processingTime} seconds</p>
                 )}
