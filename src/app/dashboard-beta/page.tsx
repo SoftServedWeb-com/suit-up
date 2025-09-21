@@ -109,12 +109,12 @@ export default function DashboardBeta() {
     try {
       setIsLoading(true);
       const response = await fetch("/api/try-on/status-history");
-      
+
       if (response.ok) {
         const data = await response.json();
         // Filter for Gemini/beta requests (those with predictionId starting with 'gemini-')
-        const betaRequests = data.requests.filter((req: TryOnRequest) => 
-          req.predictionId.startsWith('gemini-')
+        const betaRequests = data.requests.filter((req: TryOnRequest) =>
+          req.predictionId.startsWith("gemini-")
         );
         setAllRequests(betaRequests);
       } else {
@@ -167,44 +167,44 @@ export default function DashboardBeta() {
 
       const data: BetaResponse = await response.json();
 
-       if (!response.ok) {
-         // Handle subscription-related errors
-         if (data.type === "SUBSCRIPTION_LIMIT") {
-           setSubscriptionError(data.error || "Subscription limit reached");
-           return;
-         }
-         
-         // Handle rate limiting errors
-         if (data.type === "RATE_LIMIT" || data.type === "QUOTA_EXCEEDED") {
-           const errorMessage = data.error || "API rate limit exceeded";
-           const details = data.details ? `\n\n${data.details}` : "";
-           toast.error("Rate Limit Exceeded", {
-             description: errorMessage + details,
-             duration: 8000,
-           });
-           return;
-         }
-         
-         // Handle authentication errors
-         if (data.type === "AUTH_ERROR") {
-           toast.error("API Configuration Error", {
-             description: data.error || "Invalid API key configuration",
-             duration: 6000,
-           });
-           return;
-         }
+      if (!response.ok) {
+        // Handle subscription-related errors
+        if (data.type === "SUBSCRIPTION_LIMIT") {
+          setSubscriptionError(data.error || "Subscription limit reached");
+          return;
+        }
 
-         // Handle safety filter blocks
-         if (data.type === "SAFETY_FILTER") {
-           toast.error("Content Blocked", {
-             description: data.error || "Content was blocked by safety filters",
-             duration: 8000,
-           });
-           return;
-         }
-         
-         throw new Error(data.error || "Failed to submit beta try-on request");
-       }
+        // Handle rate limiting errors
+        if (data.type === "RATE_LIMIT" || data.type === "QUOTA_EXCEEDED") {
+          const errorMessage = data.error || "API rate limit exceeded";
+          const details = data.details ? `\n\n${data.details}` : "";
+          toast.error("Rate Limit Exceeded", {
+            description: errorMessage + details,
+            duration: 8000,
+          });
+          return;
+        }
+
+        // Handle authentication errors
+        if (data.type === "AUTH_ERROR") {
+          toast.error("API Configuration Error", {
+            description: data.error || "Invalid API key configuration",
+            duration: 6000,
+          });
+          return;
+        }
+
+        // Handle safety filter blocks
+        if (data.type === "SAFETY_FILTER") {
+          toast.error("Content Blocked", {
+            description: data.error || "Content was blocked by safety filters",
+            duration: 8000,
+          });
+          return;
+        }
+
+        throw new Error(data.error || "Failed to submit beta try-on request");
+      }
 
       console.log("Beta request completed successfully:", data);
 
@@ -213,7 +213,9 @@ export default function DashboardBeta() {
 
       // Show success toast with provider info
       toast.success("Virtual Try-On Complete! 🎉", {
-        description: `Generated using ${data.provider === 'gemini' ? 'Google Gemini AI' : data.provider}. Credits remaining: ${data.creditsRemaining}`,
+        description: `Generated using ${
+          data.provider === "gemini" ? "Google Gemini AI" : data.provider
+        }. Credits remaining: ${data.creditsRemaining}`,
       });
 
       // If we have a result image, show the result modal
@@ -221,8 +223,10 @@ export default function DashboardBeta() {
         const mockRequest: TryOnRequest = {
           id: data.requestId,
           predictionId: data.predictionId,
-          modelImageUrl: selectedModelImageUrl || URL.createObjectURL(modelImage!),
-          garmentImageUrl: selectedGarmentImageUrl || URL.createObjectURL(garmentImage!),
+          modelImageUrl:
+            selectedModelImageUrl || URL.createObjectURL(modelImage!),
+          garmentImageUrl:
+            selectedGarmentImageUrl || URL.createObjectURL(garmentImage!),
           category,
           status: "COMPLETED",
           resultImageUrl: data.resultImageUrl,
@@ -230,7 +234,7 @@ export default function DashboardBeta() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        
+
         setCurrentResult(mockRequest);
         setShowResultModal(true);
       }
@@ -244,7 +248,6 @@ export default function DashboardBeta() {
 
       // Reload history to include the new request
       loadTryOnHistory();
-
     } catch (error) {
       console.error("Beta try-on error:", error);
       toast.error(
@@ -277,7 +280,7 @@ export default function DashboardBeta() {
 
       // Clean up the blob URL
       window.URL.revokeObjectURL(blobUrl);
-      
+
       toast.success("Download complete! 📥");
     } catch (error) {
       console.error("Error downloading image:", error);
@@ -364,42 +367,35 @@ export default function DashboardBeta() {
               </Button>
             </Link>
           </div>
-          
+
           <div className="flex items-center gap-3 mb-2">
             <div className="flex items-center gap-2">
-              <TestTube className="h-6 w-6 text-primary" />
               <h1 className="text-3xl font-serif tracking-tight text-foreground">
-                Beta Lab
+                Virtual Try-On
               </h1>
             </div>
-            <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+            <Badge
+              variant="secondary"
+              className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
               <Zap className="h-3 w-3 mr-1" />
-              Google Gemini AI
+              Beta
             </Badge>
           </div>
-          
+
           <p className="text-muted-foreground max-w-2xl">
-            Experience next-generation virtual try-on powered by Google's Gemini 2.5 Flash Image Preview model. 
-            This experimental feature provides instant results with advanced AI capabilities.
+            Experience next-generation virtual try-on powered with our new beta
+            lab. This experimental feature provides instant results with
+            advanced AI capabilities.
           </p>
-          
-          {/* Beta Info Alert */}
-          <Alert className="mt-4 border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
-            <TestTube className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-700 dark:text-blue-300">
-              <strong>Beta Feature:</strong> This uses Google Gemini AI for instant image generation. 
-              Results may vary from our main try-on system. Your feedback helps us improve!
-            </AlertDescription>
-          </Alert>
         </div>
 
         <FashionQuote />
-        
+
         <Tabs defaultValue="try-on" className="space-y-8">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-serif tracking-tight text-foreground">
-                Gemini Tailor Board
+                Tailor Board
               </p>
               <span className="opacity-70 text-sm text-muted-foreground">
                 Instant AI-powered virtual try-on
@@ -408,14 +404,12 @@ export default function DashboardBeta() {
             <TabsList className="glass-card">
               <TabsTrigger
                 value="try-on"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Beta Try-On
               </TabsTrigger>
               <TabsTrigger
                 value="history"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                 Beta History ({allRequests.length})
               </TabsTrigger>
             </TabsList>
@@ -439,14 +433,14 @@ export default function DashboardBeta() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-accent-foreground font-medium text-lg tracking-tight flex items-center gap-2">
-                        Latest Gemini Result
+                        Latest Trial Result
                         <Badge variant="secondary" className="text-xs">
                           <Zap className="h-3 w-3 mr-1" />
                           AI Generated
                         </Badge>
                       </CardTitle>
                       <CardDescription className="text-sm text-muted-foreground mt-1">
-                        Generated instantly with Google Gemini AI
+                        Generated instantly with our new beta lab
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1 bg-green-200/50 rounded-full">
@@ -465,8 +459,7 @@ export default function DashboardBeta() {
                         onClick={() => {
                           setCurrentResult(completedRequests[0]);
                           setShowResultModal(true);
-                        }}
-                      >
+                        }}>
                         <div className="relative">
                           <Image
                             width={1080}
@@ -506,7 +499,9 @@ export default function DashboardBeta() {
                               alt="Original"
                               className="w-22 h-22 object-cover rounded-md border border-border"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">You</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              You
+                            </p>
                           </div>
 
                           <div className="flex-1 h-px bg-border"></div>
@@ -523,7 +518,9 @@ export default function DashboardBeta() {
                               alt="Garment"
                               className="w-22 h-22 object-cover rounded-md border border-border"
                             />
-                            <p className="text-xs text-muted-foreground mt-1">Garment</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Garment
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -533,11 +530,15 @@ export default function DashboardBeta() {
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <div className="flex justify-between">
                             <span>AI Provider</span>
-                            <span className="text-purple-600 font-medium">Google Gemini</span>
+                            <span className="text-purple-600 font-medium">
+                              Google Gemini
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span>Processing</span>
-                            <span className="text-green-600 font-medium">Instant</span>
+                            <span className="text-green-600 font-medium">
+                              Instant
+                            </span>
                           </div>
                           {completedRequests[0].creditsUsed && (
                             <div className="flex justify-between">
@@ -556,8 +557,7 @@ export default function DashboardBeta() {
                           onClick={() =>
                             handleDownload(completedRequests[0].resultImageUrl!)
                           }
-                          disabled={isDownloading}
-                        >
+                          disabled={isDownloading}>
                           {isDownloading ? (
                             <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -579,8 +579,7 @@ export default function DashboardBeta() {
                             className="flex-1"
                             onClick={() =>
                               handleShare(completedRequests[0].resultImageUrl!)
-                            }
-                          >
+                            }>
                             <Share className="h-4 w-4 mr-1" />
                             Share
                           </Button>
@@ -592,8 +591,7 @@ export default function DashboardBeta() {
                             onClick={() => {
                               setCurrentResult(completedRequests[0]);
                               setShowResultModal(true);
-                            }}
-                          >
+                            }}>
                             <ZoomIn className="h-4 w-4 mr-1" />
                             Enlarge
                           </Button>
@@ -666,8 +664,7 @@ export default function DashboardBeta() {
                       ? "hover:scale-105 hover:shadow-lg"
                       : "opacity-50 cursor-not-allowed"
                   }
-                `}
-              >
+                `}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -693,16 +690,18 @@ export default function DashboardBeta() {
                       Beta Try-On History
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
-                      View your Google Gemini AI virtual try-on sessions
+                      View your virtual try-on sessions
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-sm">
                       {allRequests.length} beta sessions
                     </Badge>
-                    <Badge variant="outline" className="text-sm bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                    <Badge
+                      variant="outline"
+                      className="text-sm bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
                       <Zap className="h-3 w-3 mr-1" />
-                      Gemini AI
+                      Beta
                     </Badge>
                   </div>
                 </div>
@@ -712,7 +711,9 @@ export default function DashboardBeta() {
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <Loader2 className="h-8 w-8 text-muted-foreground animate-spin mb-4" />
-                    <p className="text-muted-foreground">Loading your beta sessions...</p>
+                    <p className="text-muted-foreground">
+                      Loading your beta sessions...
+                    </p>
                   </div>
                 ) : allRequests.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16">
@@ -723,7 +724,8 @@ export default function DashboardBeta() {
                       No beta sessions yet
                     </h3>
                     <p className="text-muted-foreground text-center max-w-sm">
-                      Try your first Google Gemini AI virtual try-on to see results here
+                      Try your first beta virtual try-on to see
+                      results here
                     </p>
                   </div>
                 ) : (
@@ -740,8 +742,7 @@ export default function DashboardBeta() {
                             setCurrentResult(request);
                             setShowResultModal(true);
                           }
-                        }}
-                      >
+                        }}>
                         {/* Desktop Layout */}
                         <div className="flex items-center gap-4">
                           {/* Status & Result Preview */}
@@ -771,11 +772,12 @@ export default function DashboardBeta() {
                             <div className="flex items-center gap-2 mb-1">
                               <Badge
                                 className={getStatusColor(request.status)}
-                                variant="outline"
-                              >
+                                variant="outline">
                                 {request.status}
                               </Badge>
-                              <Badge variant="secondary" className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                              <Badge
+                                variant="secondary"
+                                className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
                                 <Zap className="h-3 w-3 mr-1" />
                                 Gemini
                               </Badge>
@@ -793,7 +795,9 @@ export default function DashboardBeta() {
                             </div>
 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span className="text-green-600 font-medium">Instant Generation</span>
+                              <span className="text-green-600 font-medium">
+                                Instant Generation
+                              </span>
                               {request.creditsUsed && (
                                 <span>{request.creditsUsed} credits</span>
                               )}
@@ -881,7 +885,9 @@ export default function DashboardBeta() {
                 <div className="md:col-span-2">
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="font-medium">Gemini AI Result</h4>
-                    <Badge variant="secondary" className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+                    <Badge
+                      variant="secondary"
+                      className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
                       <Zap className="h-3 w-3 mr-1" />
                       Google Gemini
                     </Badge>
@@ -900,15 +906,13 @@ export default function DashboardBeta() {
               <div className="flex gap-3 justify-center">
                 <Button
                   onClick={() => handleDownload(currentResult.resultImageUrl!)}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
                   <Download className="h-4 w-4 mr-2" />
                   Download
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleShare(currentResult.resultImageUrl!)}
-                >
+                  onClick={() => handleShare(currentResult.resultImageUrl!)}>
                   <Share className="h-4 w-4 mr-2" />
                   Share
                 </Button>
