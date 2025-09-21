@@ -657,7 +657,7 @@ export default function DashboardBeta() {
                 disabled={!isReadyToGenerate}
                 size="lg"
                 className={`
-                  relative overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white
+                  relative overflow-hidden text-white
                   px-8 py-3 rounded-xl font-semibold transition-all duration-300
                   ${
                     isReadyToGenerate
@@ -755,7 +755,6 @@ export default function DashboardBeta() {
                                   alt="Beta Result"
                                   className="w-16 h-16 object-cover rounded-lg border border-border"
                                 />
-                                {/* Gemini AI Badge */}
                                 <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full border-2 border-background flex items-center justify-center">
                                   <Zap className="h-3 w-3 text-white" />
                                 </div>
@@ -855,7 +854,7 @@ export default function DashboardBeta() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 font-medium font-serif text-primary">
               <TestTube className="h-5 w-5" />
-              Beta Trial Room - Gemini AI
+              Beta Trial Room - Beta
             </DialogTitle>
           </DialogHeader>
           {currentResult && (
@@ -884,12 +883,12 @@ export default function DashboardBeta() {
                 {/* Result */}
                 <div className="md:col-span-2">
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-medium">Gemini AI Result</h4>
+                    <h4 className="font-medium">Trial Room Result</h4>
                     <Badge
                       variant="secondary"
                       className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
                       <Zap className="h-3 w-3 mr-1" />
-                      Google Gemini
+                      Beta
                     </Badge>
                   </div>
                   <div className="relative">

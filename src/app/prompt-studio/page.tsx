@@ -19,74 +19,10 @@ import {
   type TransformationPrompt,
   type TransformationRequest,
 } from "@/components/prompt-studio";
+import { PREDEFINED_PROMPTS } from "@/lib/prompt";
 
 // Predefined prompts for image transformation
-const PREDEFINED_PROMPTS: TransformationPrompt[] = [
-  {
-    id: "vintage-style",
-    name: "Vintage Style",
-    description: "Transform into a vintage aesthetic with warm tones and classic styling",
-    prompt: "Transform this image into a vintage style with warm sepia tones, soft lighting, and classic aesthetic. Add subtle film grain and enhance the nostalgic atmosphere while maintaining the subject's features and pose.",
-    category: "Style",
-    icon: "🎞️"
-  },
-  {
-    id: "artistic-portrait",
-    name: "Artistic Portrait",
-    description: "Convert to an artistic painted portrait style",
-    prompt: "Transform this image into an artistic painted portrait with oil painting techniques, soft brushstrokes, and enhanced colors. Maintain realistic proportions while adding artistic flair and depth.",
-    category: "Art",
-    icon: "🎨"
-  },
-  {
-    id: "professional-headshot",
-    name: "Professional Headshot",
-    description: "Enhance for professional photography look",
-    prompt: "Transform this image into a professional headshot with perfect lighting, enhanced skin tone, professional background, and polished appearance suitable for business profiles.",
-    category: "Professional",
-    icon: "💼"
-  },
-  {
-    id: "fashion-editorial",
-    name: "Fashion Editorial",
-    description: "High-fashion magazine style transformation",
-    prompt: "Transform this image into a high-fashion editorial style with dramatic lighting, enhanced contrast, professional makeup look, and magazine-quality aesthetic.",
-    category: "Fashion",
-    icon: "👗"
-  },
-  {
-    id: "cinematic-look",
-    name: "Cinematic Look",
-    description: "Movie-style cinematic transformation",
-    prompt: "Transform this image with cinematic color grading, dramatic lighting, film-like quality, and movie poster aesthetic. Enhance mood and atmosphere while maintaining natural appearance.",
-    category: "Cinematic",
-    icon: "🎬"
-  },
-  {
-    id: "black-white-classic",
-    name: "Classic B&W",
-    description: "Elegant black and white transformation",
-    prompt: "Transform this image into an elegant black and white photograph with perfect contrast, dramatic shadows, and classic monochrome aesthetic. Enhance texture and depth.",
-    category: "Classic",
-    icon: "⚫"
-  },
-  {
-    id: "soft-glow",
-    name: "Soft Glow",
-    description: "Dreamy soft glow effect",
-    prompt: "Transform this image with a soft, dreamy glow effect, enhanced skin smoothing, warm lighting, and ethereal atmosphere. Create a romantic, gentle appearance.",
-    category: "Beauty",
-    icon: "✨"
-  },
-  {
-    id: "urban-street",
-    name: "Urban Street",
-    description: "Modern urban street photography style",
-    prompt: "Transform this image into urban street photography style with enhanced contrast, city vibes, modern aesthetic, and contemporary street fashion look.",
-    category: "Urban",
-    icon: "🏙️"
-  }
-];
+
 
 interface TransformationResponse {
   success: boolean;
@@ -106,6 +42,10 @@ export default function PromptStudio() {
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reference image state for prompts that require it
+  const [referenceImage, setReferenceImage] = useState<File | null>(null);
+  const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
+
   // Results and history
   const [transformationHistory, setTransformationHistory] = useState<TransformationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,6 +56,9 @@ export default function PromptStudio() {
 
   // Subscription error state
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+
+  // Trigger for refreshing image upload history
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   // Load transformation history on component mount
   useEffect(() => {
@@ -143,12 +86,20 @@ export default function PromptStudio() {
   };
 
   const handleImageSelect = (file: File | null, preview: string | null) => {
-      setSelectedImage(file);
+    setSelectedImage(file);
     setImagePreview(preview);
   };
 
   const handlePromptSelect = (promptId: string) => {
     setSelectedPrompt(promptId);
+    // Clear reference image when switching prompts
+    setReferenceImage(null);
+    setReferenceImagePreview(null);
+  };
+
+  const handleReferenceImageSelect = (file: File | null, preview: string | null) => {
+    setReferenceImage(file);
+    setReferenceImagePreview(preview);
   };
 
   const getSelectedPromptData = () => {
@@ -177,6 +128,12 @@ export default function PromptStudio() {
       return;
     }
 
+    const selectedPromptData = getSelectedPromptData();
+    if (selectedPromptData?.requiresReferenceImage && !referenceImage) {
+      toast.info("Please upload a reference image for this transformation style");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubscriptionError(null);
 
@@ -191,6 +148,11 @@ export default function PromptStudio() {
       formData.append("prompt", selectedPromptData.prompt);
       formData.append("promptName", selectedPromptData.name);
       formData.append("promptId", selectedPromptData.id);
+      
+      // Add reference image if required and available
+      if (selectedPromptData.requiresReferenceImage && referenceImage) {
+        formData.append("referenceImage", referenceImage);
+      }
 
       console.log("Submitting transformation request...");
 
@@ -231,6 +193,9 @@ export default function PromptStudio() {
 
       // Reload history to get the latest data from the server
       await loadTransformationHistory();
+      
+      // Trigger refresh of image upload history
+      setRefreshTrigger(prev => prev + 1);
 
       // Show result modal
       setCurrentResult(result);
@@ -241,6 +206,8 @@ export default function PromptStudio() {
       setImagePreview(null);
       setSelectedPrompt("");
       setCustomPrompt("");
+      setReferenceImage(null);
+      setReferenceImagePreview(null);
 
     } catch (error) {
       console.error("Error:", error);
@@ -260,7 +227,8 @@ export default function PromptStudio() {
   };
 
   const isReadyToTransform = selectedImage && selectedPrompt && !isSubmitting && 
-    (selectedPrompt !== "custom" || customPrompt.trim());
+    (selectedPrompt !== "custom" || customPrompt.trim()) &&
+    (!getSelectedPromptData()?.requiresReferenceImage || referenceImage);
 
   return (
     <div className="min-h-screen bg-background">
@@ -334,6 +302,7 @@ export default function PromptStudio() {
               selectedImage={selectedImage}
               imagePreview={imagePreview}
               onImageSelect={handleImageSelect}
+              refreshTrigger={refreshTrigger}
             />
 
             {/* Style Selection Component */}
@@ -343,6 +312,9 @@ export default function PromptStudio() {
               predefinedPrompts={PREDEFINED_PROMPTS}
               customPrompt={customPrompt}
               onCustomPromptChange={setCustomPrompt}
+              referenceImage={referenceImage}
+              referenceImagePreview={referenceImagePreview}
+              onReferenceImageSelect={handleReferenceImageSelect}
             />
 
             {/* Transform Button */}
@@ -352,7 +324,7 @@ export default function PromptStudio() {
                 disabled={!isReadyToTransform}
                 size="lg"
                 className={`
-                  relative overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white
+                  relative overflow-hidden text-white
                   px-8 py-3 rounded-xl font-semibold transition-all duration-300
                   ${
                     isReadyToTransform
