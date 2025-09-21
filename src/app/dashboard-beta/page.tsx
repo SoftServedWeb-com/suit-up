@@ -920,10 +920,6 @@ export default function DashboardBeta() {
 
               {/* Metadata */}
               <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p className="flex items-center justify-center gap-2">
-                  <Zap className="h-4 w-4" />
-                  Generated with Google Gemini 2.5 Flash Image Preview
-                </p>
                 <p>Category: {currentResult.category}</p>
                 <p>Processing: Instant generation</p>
                 {currentResult.creditsUsed && (
