@@ -84,6 +84,9 @@ export default function DashboardBeta() {
   >(null);
   const [category, setCategory] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [garmentAnalysis, setGarmentAnalysis] = useState<
+    { description: string; haveFace: boolean } | null
+  >(null);
 
   // Beta-specific states
   const [betaResults, setBetaResults] = useState<BetaResponse[]>([]);
@@ -103,6 +106,15 @@ export default function DashboardBeta() {
   // Load user's try-on history on component mount (filter for beta/gemini requests)
   useEffect(() => {
     loadTryOnHistory();
+  }, []);
+
+  // Listen for garment analysis events
+  useEffect(() => {
+    const handler = (e: any) => {
+      if (e?.detail) setGarmentAnalysis(e.detail);
+    };
+    window.addEventListener("garmentAnalyzed", handler as EventListener);
+    return () => window.removeEventListener("garmentAnalyzed", handler as EventListener);
   }, []);
 
   const loadTryOnHistory = async () => {
@@ -635,6 +647,7 @@ export default function DashboardBeta() {
                 onRemove={() => {
                   setGarmentImage(null);
                   setSelectedGarmentImageUrl(null);
+                  setGarmentAnalysis(null);
                 }}
                 onSelectPrevious={(imageUrl) => {
                   setSelectedGarmentImageUrl(imageUrl);
@@ -643,6 +656,23 @@ export default function DashboardBeta() {
                 type="garment"
                 icon={<Shirt className="h-5 w-5 text-primary" />}
               />
+              {garmentAnalysis && (
+                <div className="lg:col-span-2 -mt-4 text-sm text-muted-foreground">
+                  <div className="p-3 border rounded-md bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <span>Garment analysis</span>
+                      <span className={
+                        garmentAnalysis.haveFace
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }>
+                        {garmentAnalysis.haveFace ? "Face detected" : "No face detected"}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-foreground">{garmentAnalysis.description}</div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Category Selection */}

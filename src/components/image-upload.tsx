@@ -71,6 +71,15 @@ export default function ImprovedImageUpload({
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [hasLoadedPrevious, setHasLoadedPrevious] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<
+    | {
+        description: string;
+        haveFace: boolean;
+      }
+    | null
+  >(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Load previous images when component mounts or when user first interacts
   const loadPreviousImages = async () => {
@@ -137,6 +146,12 @@ export default function ImprovedImageUpload({
     if (selectedFile) {
       onUpload(selectedFile);
       setSelectedPreviousImage(null);
+      if (type === "garment") {
+        analyzeGarmentFile(selectedFile);
+      } else {
+        setAnalysis(null);
+        setAnalysisError(null);
+      }
     }
   };
 
@@ -146,6 +161,12 @@ export default function ImprovedImageUpload({
       onSelectPrevious(imageUrl);
     }
     setShowGallery(false);
+    if (type === "garment") {
+      analyzeGarmentUrl(imageUrl);
+    } else {
+      setAnalysis(null);
+      setAnalysisError(null);
+    }
   };
 
   const handleShowGallery = () => {
@@ -263,6 +284,82 @@ export default function ImprovedImageUpload({
         return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
       default:
         return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    }
+  };
+
+  // --- Gemini garment analysis helpers ---
+  const dispatchGarmentAnalyzed = (payload: {
+    description: string;
+    haveFace: boolean;
+  }) => {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("garmentAnalyzed", { detail: payload })
+      );
+    } catch {}
+  };
+
+  const analyzeGarmentFile = async (file: File) => {
+    try {
+      setAnalysisLoading(true);
+      setAnalysisError(null);
+      const form = new FormData();
+      form.append("garmentImage", file);
+      
+      const res = await fetch("/api/garment/analyze", { method: "POST", body: form });
+      const data = await res.json();
+
+      if (!res.ok || !data?.success) throw new Error(data?.error || "Analyze failed");
+      setAnalysis({ description: data.description, haveFace: data.haveFace });
+      dispatchGarmentAnalyzed({ description: data.description, haveFace: data.haveFace });
+      // If face detected, crop via external endpoint then replace file
+      if (data.haveFace) {
+        const upload = new FormData();
+        upload.append("file", file);
+        upload.append("prefix", "garment-src");
+        const upRes = await fetch("/api/upload/temp-url", { method: "POST", body: upload });
+        const up = await upRes.json();
+        if (!upRes.ok || !up?.url) throw new Error(up?.error || "Failed to get image URL");
+        const cropUrl = `https://e77c39059187.ngrok-free.app/process-image?action=garment&neck_offset_ratio=0.3&image_url=${encodeURIComponent(up.url)}`;
+        const cropRes = await fetch(cropUrl, { method: "POST", headers: { accept: "image/jpeg" } });
+        if (!cropRes.ok) throw new Error("Garment crop failed");
+        const blob = await cropRes.blob();
+        const croppedFile = new File([blob], `garment_cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
+        onUpload(croppedFile);
+      }
+    } catch (err: any) {
+      setAnalysis(null);
+      setAnalysisError(err?.message || "Failed to analyze image");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const analyzeGarmentUrl = async (url: string) => {
+    try {
+      setAnalysisLoading(true);
+      setAnalysisError(null);
+      const form = new FormData();
+      form.append("imageUrl", url);
+      const res = await fetch("/api/garment/analyze", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok || !data?.success) throw new Error(data?.error || "Analyze failed");
+      setAnalysis({ description: data.description, haveFace: data.haveFace });
+      dispatchGarmentAnalyzed({ description: data.description, haveFace: data.haveFace });
+      if (data.haveFace) {
+        const cropUrl = `https://e77c39059187.ngrok-free.app/process-image?action=garment&neck_offset_ratio=0.3&image_url=${encodeURIComponent(url)}`;
+        const cropRes = await fetch(cropUrl, { method: "POST", headers: { accept: "image/jpeg" } });
+        if (!cropRes.ok) throw new Error("Garment crop failed");
+        const blob = await cropRes.blob();
+        const croppedFile = new File([blob], `garment_cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
+        onUpload(croppedFile);
+        setSelectedPreviousImage(null);
+      }
+    } catch (err: any) {
+      setAnalysis(null);
+      setAnalysisError(err?.message || "Failed to analyze image");
+    } finally {
+      setAnalysisLoading(false);
     }
   };
 
