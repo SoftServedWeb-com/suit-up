@@ -52,3 +52,20 @@ export function getTodaysColor(): string {
   const theme = getTodaysColorTheme();
   return colorThemes[theme].color;
 }
+
+
+export  const getCategoryColor = (category?: string) => {
+  if (!category)
+    return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+
+  switch (category) {
+    case "tops":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    case "bottoms":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
+    case "one-pieces":
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+    default:
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+  }
+};

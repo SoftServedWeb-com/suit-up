@@ -12,6 +12,7 @@ import {
   Info,
   CheckCircle,
   RefreshCw,
+  Crop,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +27,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,24 +34,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-interface ImageUploadProps {
-  title: string;
-  description: string;
-  file: File | null;
-  onUpload: (file: File) => void;
-  onRemove?: () => void;
-  onSelectPrevious?: (imageUrl: string) => void;
-  type: "model" | "garment";
-  icon?: React.ReactNode;
-}
-
-interface PreviousImage {
-  id: string;
-  url: string;
-  createdAt: string;
-  category?: string;
-}
+import {
+  cleanup,
+  initializeFaceDetector,
+  processGarmentImage,
+  processGarmentImageFromUrl,
+} from "@/lib/face-crop";
+import { ImageUploadProps, PreviousImage } from "@/lib/types";
+import { getCategoryColor } from "@/lib/colors-switch";
 
 export default function ImprovedImageUpload({
   title,
@@ -71,19 +61,36 @@ export default function ImprovedImageUpload({
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [hasLoadedPrevious, setHasLoadedPrevious] = useState(false);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysis, setAnalysis] = useState<
-    | {
-        description: string;
-        haveFace: boolean;
-      }
-    | null
-  >(null);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  const [processingImage, setProcessingImage] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [imageCropped, setImageCropped] = useState(false);
+  const [detectorReady, setDetectorReady] = useState(false);
 
   // Load previous images when component mounts or when user first interacts
+  useEffect(() => {
+    if (type === "garment") {
+      initializeFaceDetector()
+        .then(() => {
+          setDetectorReady(true);
+          console.log("Face detector ready");
+        })
+        .catch((err) => {
+          console.error("Failed to initialize face detector:", err);
+        });
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (type === "garment") {
+        cleanup();
+      }
+    };
+  }, [type]);
+
+  // Load previous images
   const loadPreviousImages = async () => {
-    if (hasLoadedPrevious && !error) return; // Don't reload if already loaded successfully
+    if (hasLoadedPrevious && !error) return;
 
     setIsLoadingPrevious(true);
     setError(null);
@@ -102,7 +109,6 @@ export default function ImprovedImageUpload({
         return;
       }
 
-      // Extract images for this type
       const images: PreviousImage[] = [];
       const seenUrls = new Set<string>();
 
@@ -126,7 +132,6 @@ export default function ImprovedImageUpload({
         }
       });
 
-      // Sort by most recent first
       images.sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -141,34 +146,186 @@ export default function ImprovedImageUpload({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      onUpload(selectedFile);
-      setSelectedPreviousImage(null);
-      if (type === "garment") {
-        analyzeGarmentFile(selectedFile);
-      } else {
-        setAnalysis(null);
-        setAnalysisError(null);
+    if (!selectedFile) return;
+
+    setSelectedPreviousImage(null);
+    setImageCropped(false);
+
+    if (type === "garment") {
+      setProcessingImage(true);
+
+      try {
+        // Step 1: Analyze first
+        const form = new FormData();
+        form.append("garmentImage", selectedFile);
+
+        const res = await fetch("/api/garment/analyze", {
+          method: "POST",
+          body: form,
+        });
+        const data = await res.json();
+
+        let fileToUpload = selectedFile;
+        let wasCropped = false;
+
+        if (res.ok && data.success && data.haveFace && detectorReady) {
+          console.log("😊 Face detected! Cropping...");
+
+          try {
+            const result = await processGarmentImage(selectedFile, 0.3);
+
+            if (result.wasCropped) {
+              fileToUpload = result.file;
+              wasCropped = true;
+              setImageCropped(true);
+
+              // VISUAL VERIFICATION - Create side-by-side comparison
+              const originalUrl = URL.createObjectURL(selectedFile);
+              const croppedUrl = URL.createObjectURL(result.file);
+
+              console.log("🖼️ VISUAL COMPARISON:");
+              console.log(
+                "%c Original Image:",
+                "color: blue; font-weight: bold"
+              );
+              console.log(originalUrl);
+              console.log(
+                "%c Cropped Image:",
+                "color: green; font-weight: bold"
+              );
+              console.log(croppedUrl);
+
+              // Open both images in new tabs for comparison
+              if (
+                confirm("Open images for comparison? (Original vs Cropped)")
+              ) {
+                window.open(originalUrl, "_blank");
+                setTimeout(() => window.open(croppedUrl, "_blank"), 100);
+              }
+
+              // Show dimensions
+              const img1 = new Image();
+              const img2 = new Image();
+              img1.onload = () => {
+                img2.onload = () => {
+                  console.table({
+                    Original: {
+                      width: img1.width,
+                      height: img1.height,
+                      size: `${(selectedFile.size / 1024).toFixed(2)} KB`,
+                    },
+                    Cropped: {
+                      width: img2.width,
+                      height: img2.height,
+                      size: `${(fileToUpload.size / 1024).toFixed(2)} KB`,
+                    },
+                  });
+                };
+                img2.src = croppedUrl;
+              };
+              img1.src = originalUrl;
+            }
+          } catch (cropError) {
+            console.error("❌ Cropping failed:", cropError);
+          }
+        }
+
+        // Upload the final file
+        onUpload(fileToUpload);
+
+        if (res.ok && data.success) {
+          window.dispatchEvent(
+            new CustomEvent("garmentAnalyzed", {
+              detail: {
+                description: data.description,
+                haveFace: data.haveFace,
+                wasCropped: wasCropped,
+              },
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        onUpload(selectedFile);
+      } finally {
+        setProcessingImage(false);
       }
+    } else {
+      onUpload(selectedFile);
     }
   };
 
-  const handleSelectPrevious = (imageUrl: string) => {
+  const handleSelectPrevious = async (imageUrl: string) => {
     setSelectedPreviousImage(imageUrl);
+    setImageCropped(false);
+
     if (onSelectPrevious) {
       onSelectPrevious(imageUrl);
     }
     setShowGallery(false);
+
+    // For garment images, analyze and crop if needed
     if (type === "garment") {
-      analyzeGarmentUrl(imageUrl);
-    } else {
-      setAnalysis(null);
-      setAnalysisError(null);
+      console.log("🔄 Processing previous garment image");
+      setProcessingImage(true);
+
+      try {
+        // Step 1: Analyze the image
+        const analyzeForm = new FormData();
+        analyzeForm.append("imageUrl", imageUrl);
+
+        console.log("📤 Analyzing previous image URL...");
+        const res = await fetch("/api/garment/analyze", {
+          method: "POST",
+          body: analyzeForm,
+        });
+        const data = await res.json();
+        console.log("📊 Analysis result for previous image:", data);
+
+        // Step 2: If face detected and detector ready, crop it
+        if (res.ok && data.success && data.haveFace && detectorReady) {
+          console.log("😊 Face detected in previous image! Starting crop...");
+
+          try {
+            const result = await processGarmentImageFromUrl(imageUrl, 0.3);
+
+            if (result.wasCropped && result.blob) {
+              console.log("✂️ Successfully cropped previous image");
+              const croppedFile = new File(
+                [result.blob],
+                `garment_cropped_${Date.now()}.jpg`,
+                { type: "image/jpeg" }
+              );
+              onUpload(croppedFile);
+              setSelectedPreviousImage(null); // Clear selection since using cropped
+              setImageCropped(true);
+            }
+          } catch (cropError) {
+            console.error("❌ Error cropping previous image:", cropError);
+          }
+        }
+
+        // Dispatch event
+        if (res.ok && data.success) {
+          window.dispatchEvent(
+            new CustomEvent("garmentAnalyzed", {
+              detail: {
+                description: data.description,
+                haveFace: data.haveFace,
+                wasCropped: imageCropped,
+              },
+            })
+          );
+        }
+      } catch (err) {
+        console.error("❌ Error processing previous image:", err);
+      } finally {
+        setProcessingImage(false);
+      }
     }
   };
-
   const handleShowGallery = () => {
     if (!hasLoadedPrevious) {
       loadPreviousImages();
@@ -249,11 +406,21 @@ export default function ImprovedImageUpload({
 
           <div>
             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+              <Crop className="h-4 w-4 text-blue-500" />
+              Auto-Cropping
+            </h4>
+            <p className="text-muted-foreground">
+              If a face is detected in the garment image, it will be
+              automatically cropped from the neck down for better results.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-500" />
               Avoid
             </h4>
             <ul className="space-y-1 text-muted-foreground">
-              <li>• Avoid including faces</li>
               <li>• Blurry or pixelated images</li>
               <li>• Multiple garments in one image</li>
               <li>• Images with text overlays</li>
@@ -268,98 +435,6 @@ export default function ImprovedImageUpload({
           </div>
         </div>
       );
-    }
-  };
-
-  const getCategoryColor = (category?: string) => {
-    if (!category)
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
-
-    switch (category) {
-      case "tops":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "bottoms":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-      case "one-pieces":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      default:
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-    }
-  };
-
-  // --- Gemini garment analysis helpers ---
-  const dispatchGarmentAnalyzed = (payload: {
-    description: string;
-    haveFace: boolean;
-  }) => {
-    try {
-      window.dispatchEvent(
-        new CustomEvent("garmentAnalyzed", { detail: payload })
-      );
-    } catch {}
-  };
-
-  const analyzeGarmentFile = async (file: File) => {
-    try {
-      setAnalysisLoading(true);
-      setAnalysisError(null);
-      const form = new FormData();
-      form.append("garmentImage", file);
-      
-      const res = await fetch("/api/garment/analyze", { method: "POST", body: form });
-      const data = await res.json();
-
-      if (!res.ok || !data?.success) throw new Error(data?.error || "Analyze failed");
-      setAnalysis({ description: data.description, haveFace: data.haveFace });
-      dispatchGarmentAnalyzed({ description: data.description, haveFace: data.haveFace });
-      // If face detected, crop via external endpoint then replace file
-      if (data.haveFace) {
-        const upload = new FormData();
-        upload.append("file", file);
-        upload.append("prefix", "garment-src");
-        const upRes = await fetch("/api/upload/temp-url", { method: "POST", body: upload });
-        const up = await upRes.json();
-        if (!upRes.ok || !up?.url) throw new Error(up?.error || "Failed to get image URL");
-        const cropUrl = `https://e77c39059187.ngrok-free.app/process-image?action=garment&neck_offset_ratio=0.3&image_url=${encodeURIComponent(up.url)}`;
-        const cropRes = await fetch(cropUrl, { method: "POST", headers: { accept: "image/jpeg" } });
-        if (!cropRes.ok) throw new Error("Garment crop failed");
-        const blob = await cropRes.blob();
-        const croppedFile = new File([blob], `garment_cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
-        onUpload(croppedFile);
-      }
-    } catch (err: any) {
-      setAnalysis(null);
-      setAnalysisError(err?.message || "Failed to analyze image");
-    } finally {
-      setAnalysisLoading(false);
-    }
-  };
-
-  const analyzeGarmentUrl = async (url: string) => {
-    try {
-      setAnalysisLoading(true);
-      setAnalysisError(null);
-      const form = new FormData();
-      form.append("imageUrl", url);
-      const res = await fetch("/api/garment/analyze", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || !data?.success) throw new Error(data?.error || "Analyze failed");
-      setAnalysis({ description: data.description, haveFace: data.haveFace });
-      dispatchGarmentAnalyzed({ description: data.description, haveFace: data.haveFace });
-      if (data.haveFace) {
-        const cropUrl = `https://e77c39059187.ngrok-free.app/process-image?action=garment&neck_offset_ratio=0.3&image_url=${encodeURIComponent(url)}`;
-        const cropRes = await fetch(cropUrl, { method: "POST", headers: { accept: "image/jpeg" } });
-        if (!cropRes.ok) throw new Error("Garment crop failed");
-        const blob = await cropRes.blob();
-        const croppedFile = new File([blob], `garment_cropped_${Date.now()}.jpg`, { type: "image/jpeg" });
-        onUpload(croppedFile);
-        setSelectedPreviousImage(null);
-      }
-    } catch (err: any) {
-      setAnalysis(null);
-      setAnalysisError(err?.message || "Failed to analyze image");
-    } finally {
-      setAnalysisLoading(false);
     }
   };
 
@@ -380,16 +455,14 @@ export default function ImprovedImageUpload({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-              >
+                className="h-8 w-8 p-0 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors">
                 <Info className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent
               className="w-96 max-h-96 overflow-y-auto"
               side="bottom"
-              align="end"
-            >
+              align="end">
               {getInfoContent()}
             </PopoverContent>
           </Popover>
@@ -398,9 +471,34 @@ export default function ImprovedImageUpload({
       </CardHeader>
 
       <CardContent>
-        {currentImageSrc ? (
+        {processingImage ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            <p className="text-sm text-muted-foreground">
+              Processing garment image...
+            </p>
+          </div>
+        ) : currentImageSrc ? (
           // Image Selected State
           <div className="space-y-4">
+            
+            {type === "garment" && file && (
+                <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md">
+                  <p className="text-xs text-green-700 dark:text-green-300 font-medium">
+                    ✂️ Image auto-cropped from neck down
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const url = URL.createObjectURL(file);
+                      window.open(url, "_blank");
+                    }}
+                    className="mt-1 text-xs">
+                    View Cropped Image
+                  </Button>
+                </div>
+              )}
             <div className="relative group">
               <img
                 src={currentImageSrc}
@@ -415,15 +513,13 @@ export default function ImprovedImageUpload({
                     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4=";
                 }}
               />
-
               {onRemove && (
                 <button
                   onClick={() => {
                     setSelectedPreviousImage(null);
                     if (onRemove) onRemove();
                   }}
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-destructive/90 text-destructive-foreground hover:bg-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200"
-                >
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full bg-destructive/90 text-destructive-foreground hover:bg-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200">
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -475,8 +571,7 @@ export default function ImprovedImageUpload({
                 onClick={() =>
                   document.getElementById(`${type}-upload`)?.click()
                 }
-                className="hover:border-primary/50 hover:text-primary transition-colors"
-              >
+                className="hover:border-primary/50 hover:text-primary transition-colors">
                 <Upload className="h-3 w-3 mr-2" />
                 Upload New
               </Button>
@@ -485,8 +580,7 @@ export default function ImprovedImageUpload({
                 variant="outline"
                 size="sm"
                 onClick={handleShowGallery}
-                className="hover:border-primary/50 hover:text-primary transition-colors"
-              >
+                className="hover:border-primary/50 hover:text-primary transition-colors">
                 <History className="h-3 w-3 mr-2" />
                 Browse Previous
               </Button>
@@ -498,8 +592,9 @@ export default function ImprovedImageUpload({
             {/* Main Upload Area */}
             <div
               className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-all duration-300 cursor-pointer group bg-gradient-to-b from-muted/20 to-muted/5 hover:from-primary/5 hover:to-primary/10"
-              onClick={() => document.getElementById(`${type}-upload`)?.click()}
-            >
+              onClick={() =>
+                document.getElementById(`${type}-upload`)?.click()
+              }>
               <div className="space-y-4">
                 <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors group-hover:scale-105 duration-300">
                   <Upload className="h-8 w-8 text-primary" />
@@ -517,6 +612,7 @@ export default function ImprovedImageUpload({
                 </div>
               </div>
             </div>
+            
 
             {/* Or Divider */}
             <div className="relative">
@@ -536,8 +632,7 @@ export default function ImprovedImageUpload({
               size="sm"
               onClick={handleShowGallery}
               className="w-full hover:border-primary/50 hover:text-primary transition-colors"
-              disabled={isLoadingPrevious}
-            >
+              disabled={isLoadingPrevious}>
               {isLoadingPrevious ? (
                 <>
                   <RefreshCw className="h-3 w-3 mr-2 animate-spin" />
@@ -568,7 +663,7 @@ export default function ImprovedImageUpload({
         />
 
         {/* Gallery Dialog */}
-        <Dialog open={showGallery} onOpenChange={setShowGallery} >
+        <Dialog open={showGallery} onOpenChange={setShowGallery}>
           <DialogContent className="max-w-md md:max-w-4xl w-full  max-h-[80vh] m overflow-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -595,8 +690,7 @@ export default function ImprovedImageUpload({
                   <Button
                     variant="outline"
                     onClick={loadPreviousImages}
-                    className="hover:border-primary/50 hover:text-primary"
-                  >
+                    className="hover:border-primary/50 hover:text-primary">
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Retry
                   </Button>
@@ -617,8 +711,7 @@ export default function ImprovedImageUpload({
                     <div
                       key={image.id}
                       className="relative group cursor-pointer"
-                      onClick={() => handleSelectPrevious(image.url)}
-                    >
+                      onClick={() => handleSelectPrevious(image.url)}>
                       <img
                         src={image.url}
                         alt={`Previous ${type}`}
@@ -645,8 +738,7 @@ export default function ImprovedImageUpload({
                           <Badge
                             className={`text-xs ${getCategoryColor(
                               image.category
-                            )}`}
-                          >
+                            )}`}>
                             {image.category}
                           </Badge>
                         </div>

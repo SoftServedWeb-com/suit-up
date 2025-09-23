@@ -42,6 +42,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
 import FashionQuote from "@/components/fashion-quote";
+import ImprovedImageUpload from "@/components/image-upload";
 
 interface TryOnRequest {
   id: string;
@@ -85,7 +86,7 @@ export default function DashboardBeta() {
   const [category, setCategory] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [garmentAnalysis, setGarmentAnalysis] = useState<
-    { description: string; haveFace: boolean } | null
+    { description: string; haveFace: boolean, wasCropped: boolean} | null
   >(null);
 
   // Beta-specific states
@@ -99,10 +100,22 @@ export default function DashboardBeta() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Subscription error state
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(
-    null
-  );
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const handleGarmentAnalyzed = (event: CustomEvent) => {
+      setGarmentAnalysis({
+        description: event.detail.description || "Garment processed",
+        haveFace: event.detail.haveFace,
+        wasCropped: event.detail.wasCropped
+      });
+    };
+  
+    window.addEventListener('garmentAnalyzed', handleGarmentAnalyzed as any);
+    return () => {
+      window.removeEventListener('garmentAnalyzed', handleGarmentAnalyzed as any);
+    };
+  }, []);
   // Load user's try-on history on component mount (filter for beta/gemini requests)
   useEffect(() => {
     loadTryOnHistory();
@@ -188,7 +201,7 @@ export default function DashboardBeta() {
 
         // Handle rate limiting errors
         if (data.type === "RATE_LIMIT" || data.type === "QUOTA_EXCEEDED") {
-          const errorMessage = data.error || "API rate limit exceeded";
+          const errorMessage = data.error || "Rate limit exceeded";
           const details = data.details ? `\n\n${data.details}` : "";
           toast.error("Rate Limit Exceeded", {
             description: errorMessage + details,
@@ -199,8 +212,8 @@ export default function DashboardBeta() {
 
         // Handle authentication errors
         if (data.type === "AUTH_ERROR") {
-          toast.error("API Configuration Error", {
-            description: data.error || "Invalid API key configuration",
+          toast.error("Configuration Error", {
+            description: data.error || "Invalid key configuration",
             duration: 6000,
           });
           return;
@@ -617,7 +630,7 @@ export default function DashboardBeta() {
 
             {/* Upload Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ImageUpload
+              <ImprovedImageUpload
                 title="Model Photo"
                 description="Upload a clear photo of the person who will try on the clothes"
                 file={modelImage}
@@ -636,7 +649,7 @@ export default function DashboardBeta() {
                 type="model"
                 icon={<User className="h-5 w-5 text-primary" />}
               />
-              <ImageUpload
+              <ImprovedImageUpload
                 title="Garment Photo"
                 description="Upload a photo of the clothing item to virtually try on"
                 file={garmentImage}
