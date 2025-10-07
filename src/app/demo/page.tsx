@@ -3,7 +3,7 @@ import React from 'react'
 
 const DemoPage = () => {
   return (
-    <div><ImageCropper/></div>
+    <div></div>
   )
 }
 
