@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Upload, Undo, Redo, Trash2, Download, Zap, Lasso } from "lucide-react";
+import { Upload, Undo, Redo, Trash2, Download, Zap, Lasso, Square, X } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { DrawingToolbar, PropertiesPanel } from "./toolbars";
@@ -54,6 +54,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
   // State
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [showStartOptions, setShowStartOptions] = useState(true);
+  const [showSizeSelector, setShowSizeSelector] = useState(false);
+  const [customWidth, setCustomWidth] = useState('800');
+  const [customHeight, setCustomHeight] = useState('600');
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [colors, setColors] = useState(config.colors);
   const [sizes, setSizes] = useState(config.defaultSizes);
@@ -101,6 +105,45 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     redo,
   } = useAnnotations();
 
+  // Preset sizes for blank canvas
+  const presetSizes = [
+    { name: 'Square (1:1)', width: 800, height: 800 },
+    { name: 'Landscape (16:9)', width: 1200, height: 675 },
+    { name: 'Portrait (9:16)', width: 675, height: 1200 },
+    { name: 'Standard (4:3)', width: 800, height: 600 },
+  ];
+
+  // Create blank canvas
+  const createBlankCanvas = useCallback((width: number, height: number) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Fill with white background
+    ctx.fillStyle = config.canvas.backgroundColor;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Convert to image
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], 'blank-canvas.png', { type: 'image/png' });
+        loadImage(file).then((img) => {
+          setImage(img);
+          setDimensions({ width, height });
+          setShowStartOptions(false);
+          setShowSizeSelector(false);
+          clearAll();
+        }).catch((error) => {
+          onError?.("Failed to create blank canvas");
+          console.error("Failed to create blank canvas:", error);
+        });
+      }
+    });
+  }, [config.canvas.backgroundColor, clearAll, onError]);
+
   // Handle image upload
   const handleImageUpload = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +161,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
         setImage(img);
         setDimensions(newDimensions);
+        setShowStartOptions(false);
         clearAll();
       } catch (error) {
         onError?.("Failed to load image");
@@ -126,6 +170,16 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     },
     [config.canvas, clearAll, onError]
   );
+
+  // Handle custom canvas size
+  const handleCustomSize = () => {
+    const width = parseInt(customWidth);
+    const height = parseInt(customHeight);
+    
+    if (width > 0 && height > 0 && width <= 2400 && height <= 2400) {
+      createBlankCanvas(width, height);
+    }
+  };
 
   // Handle overlay image upload
   const handleOverlayImageUpload = useCallback(
@@ -157,7 +211,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         const y = (dimensions.height - height) / 2;
 
         addImageAnnotation(x, y, width, height, img);
-        setActiveTool(null); // Deselect tool after adding image
+        setActiveTool(null);
       } catch (error) {
         onError?.("Failed to load overlay image");
         console.error("Failed to load overlay image:", error);
@@ -175,7 +229,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       const y = (event.clientY - rect.top) * (canvas.height / rect.height);
       const point = { x, y, timestamp: Date.now() };
 
-      // Handle tool-specific actions first
       if (activeTool === "text") {
         setEditingTextId(null);
         setTextPosition({ x, y });
@@ -184,26 +237,21 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       }
 
       if (activeTool === "image") {
-        // Trigger image upload
         overlayImageInputRef.current?.click();
         return;
       }
 
       if (activeTool === "prompt") {
-        // Open prompt modal
         setShowPromptModal(true);
         return;
       }
 
-      // Try to start dragging existing annotations first
       const didStartDrag = startDragging(point);
       if (didStartDrag) {
-        // Check if it's a text annotation for potential editing
         const textAnn = annotations.find(
           (ann) => ann.id === selectedAnnotationId && ann.type === "text"
         );
         if (textAnn && event.detail === 2) {
-          // Double click
           setEditingTextId(textAnn.id);
           setTextPosition({ x: (textAnn as any).x, y: (textAnn as any).y });
           setShowTextModal(true);
@@ -213,7 +261,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
 
-      // If no dragging started and we have a drawing tool, start drawing
       if (
         activeTool === "draw" ||
         activeTool === "arrow" ||
@@ -288,11 +335,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const handleTextSubmit = useCallback(
     (text: string, color: string, fontSize: number) => {
       if (editingTextId) {
-        // Update existing text
         updateTextAnnotation(editingTextId, { text, color, fontSize });
         setEditingTextId(null);
       } else {
-        // Add new text
         addTextAnnotation(
           textPosition.x,
           textPosition.y,
@@ -306,10 +351,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     [textPosition, addTextAnnotation, editingTextId, updateTextAnnotation]
   );
 
-  // Open text modal immediately when text tool is selected
+  // Auto-open modals
   React.useEffect(() => {
     if (activeTool === "text" && !showTextModal && !editingTextId) {
-      // Set default position to center of canvas
       setTextPosition({
         x: dimensions.width / 2,
         y: dimensions.height / 2,
@@ -318,7 +362,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     }
   }, [activeTool, showTextModal, editingTextId, dimensions]);
 
-  // Open prompt modal immediately when prompt tool is selected
   React.useEffect(() => {
     if (activeTool === "prompt" && !showPromptModal) {
       setShowPromptModal(true);
@@ -337,7 +380,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
   // Handle download
   const handleDownload = useCallback(() => {
-    // Create a temporary canvas to combine image and annotations
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = dimensions.width;
     tempCanvas.height = dimensions.height;
@@ -345,17 +387,13 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     const ctx = tempCanvas.getContext("2d");
     if (!ctx) return;
 
-    // Draw background
     ctx.fillStyle = config.canvas.backgroundColor;
     ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-    // Draw image if exists
     if (image) {
       ctx.drawImage(image, 0, 0, tempCanvas.width, tempCanvas.height);
     }
 
-    // The actual annotation drawing would be handled by the canvas component
-    // For now, we'll just download the current state
     const dataUrl = canvasToDataURL(tempCanvas);
     const link = document.createElement("a");
     link.download = "annotated-image.png";
@@ -374,7 +412,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       setIsGenerating(true);
 
       try {
-        // Create canvas with current image
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = dimensions.width;
         tempCanvas.height = dimensions.height;
@@ -385,7 +422,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         ctx.drawImage(image, 0, 0, tempCanvas.width, tempCanvas.height);
         const imageData = canvasToDataURL(tempCanvas);
 
-        // Use mask strokes directly for Nano Banana API
         const maskData = maskStrokes.length > 0 ? maskStrokes : undefined;
 
         const request: GenerationRequest = {
@@ -402,10 +438,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         if (response.success && response.result) {
           onImageGenerated?.(response.result.output);
 
-          // Load the generated image
           const generatedImg = await loadImage(response.result.output);
           setImage(generatedImg);
-          clearMaskStrokes(); // Clear mask after generation
+          clearMaskStrokes();
         } else {
           throw new Error(response.error?.message || "Generation failed");
         }
@@ -429,6 +464,145 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     ]
   );
 
+  // Render start options if no image loaded
+  if (showStartOptions && !image) {
+    if (showSizeSelector) {
+      return (
+        <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
+          <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+            <h1 className="text-xl font-semibold text-gray-900">Choose Canvas Size</h1>
+            <button
+              onClick={() => setShowSizeSelector(false)}
+              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <X size={20} className="text-slate-600" />
+            </button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center p-12">
+            <div className="w-full max-w-2xl space-y-6">
+              {/* Preset Sizes */}
+              <div className="grid grid-cols-2 gap-4">
+                {presetSizes.map((preset) => (
+                  <button
+                    key={preset.name}
+                    onClick={() => createBlankCanvas(preset.width, preset.height)}
+                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
+                  >
+                    <Square size={32} className="text-slate-400 group-hover:text-blue-600 mb-2" />
+                    <span className="font-semibold text-slate-700 group-hover:text-blue-700">
+                      {preset.name}
+                    </span>
+                    <span className="text-sm text-slate-500 mt-1">
+                      {preset.width} × {preset.height}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Size */}
+              <div className="p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
+                <h3 className="font-semibold text-slate-700 mb-4">Custom Size</h3>
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="block text-sm text-slate-600 mb-2">Width (px)</label>
+                    <input
+                      type="number"
+                      value={customWidth}
+                      onChange={(e) => setCustomWidth(e.target.value)}
+                      min="100"
+                      max="2400"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm text-slate-600 mb-2">Height (px)</label>
+                    <input
+                      type="number"
+                      value={customHeight}
+                      onChange={(e) => setCustomHeight(e.target.value)}
+                      min="100"
+                      max="2400"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleCustomSize}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Create
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-2">Maximum size: 2400 × 2400 pixels</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
+        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+          <h1 className="text-xl font-semibold text-gray-900">Annotation Editor</h1>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-12">
+          <div className="w-full max-w-4xl space-y-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-slate-800 mb-2">Get Started</h2>
+              <p className="text-slate-600">Choose how you want to begin</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Upload Image Option */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-300 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 min-h-[280px]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Upload size={40} className="text-blue-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Upload Image</h3>
+                  <p className="text-slate-600 text-center">
+                    Start with an existing image and add annotations
+                  </p>
+                </div>
+              </button>
+
+              {/* Blank Canvas Option */}
+              <button
+                onClick={() => setShowSizeSelector(true)}
+                className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-300 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all duration-300 min-h-[280px]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Square size={40} className="text-green-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">Blank Canvas</h3>
+                  <p className="text-slate-600 text-center">
+                    Start from scratch with a blank canvas
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
       {/* Header */}
@@ -446,10 +620,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             activeTool={activeTool}
             onToolSelect={(tool) => {
               if (tool === activeTool) {
-                // Toggle off if clicking the same tool
                 setActiveTool(null);
                 if (tool === "mask") {
-                  // Clear mask state when deactivating
                   setMaskPrompt("");
                 }
               } else {
@@ -495,18 +667,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-300 rounded-xl bg-white/50 backdrop-blur-sm">
-                <Upload size={48} className="text-slate-400 mb-4" />
-                <p className="text-slate-500 mb-4 text-lg">No image loaded</p>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 font-medium shadow-lg"
-                >
-                  Upload Image
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -522,6 +683,19 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             >
               <Upload size={16} />
               <span className="hidden sm:inline">Upload</span>
+            </button>
+
+            {/* New Canvas Button */}
+            <button
+              onClick={() => {
+                setShowStartOptions(true);
+                setImage(null);
+                clearAll();
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 text-sm font-medium shadow-lg"
+            >
+              <Square size={16} />
+              <span className="hidden sm:inline">New</span>
             </button>
 
             {/* Undo/Redo */}
@@ -569,11 +743,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                     maskStrokes.length > 0 &&
                     maskPrompt.trim()
                   ) {
-                    // Use mask prompt directly
                     if (apiClient) {
                       handleGenerate(maskPrompt);
                     } else {
-                      // Demo mode - show what would happen
                       alert(
                         `Demo Mode: Would generate with mask prompt: "${maskPrompt}"`
                       );
@@ -582,7 +754,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                     if (apiClient) {
                       setShowPromptModal(true);
                     } else {
-                      // Demo mode - show what would happen
                       alert(
                         "Demo Mode: Would open prompt modal for AI generation"
                       );
@@ -637,7 +808,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         onClose={() => {
           setShowTextModal(false);
           setEditingTextId(null);
-          setActiveTool(null); // Deselect tool when closing
+          setActiveTool(null);
         }}
         onSubmit={handleTextSubmit}
         initialText={
@@ -665,13 +836,12 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         isOpen={showPromptModal}
         onClose={() => {
           setShowPromptModal(false);
-          setActiveTool(null); // Deselect tool when closing
+          setActiveTool(null);
         }}
         onSubmit={(prompt) => {
           if (apiClient) {
             handleGenerate(prompt);
           } else {
-            // Demo mode - show what would happen
             alert(`Demo Mode: Would generate with prompt: "${prompt}"`);
             setShowPromptModal(false);
             setActiveTool(null);
@@ -718,7 +888,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       if (apiClient) {
                         handleGenerate(maskPrompt);
                       } else {
-                        // Demo mode - show what would happen
                         alert(
                           `Demo Mode: Would generate with mask prompt: "${maskPrompt}"`
                         );

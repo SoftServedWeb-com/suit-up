@@ -1,23 +1,25 @@
 'use client'
 
 import { AnnotationEditor } from "./annotation-editor";
+import { CanvasAPIClient } from "@/lib/api-client";
+import { useState } from "react";
 
 export default function CanvasStudio() {
+  const [apiClient] = useState(() => new CanvasAPIClient());
+
   const handleImageGenerated = (imageUrl: string) => {
     console.log("Generated image:", imageUrl);
-    // Handle the generated image (e.g., display it, save it, etc.)
   };
 
   const handleError = (error: string) => {
     console.error("Error:", error);
-    // Handle errors (e.g., show toast notification)
     alert(`Error: ${error}`);
   };
 
   return (
     <div className="h-screen">
       <AnnotationEditor
-        // apiClient={apiClient} 
+        apiClient={apiClient}
         onImageGenerated={handleImageGenerated}
         onError={handleError}
         config={{
@@ -42,5 +44,4 @@ export default function CanvasStudio() {
       />
     </div>
   );
-};
-
+}
