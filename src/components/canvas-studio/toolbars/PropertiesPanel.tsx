@@ -1,6 +1,7 @@
 import React from "react";
-import { ColorPicker, Slider } from "../ui";
-import type { ToolType } from "../../types";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Slider } from "@/components/ui/slider";
+import type { ToolType } from "../annotation-types";
 
 interface PropertiesPanelProps {
   activeTool: ToolType;
@@ -10,7 +11,7 @@ interface PropertiesPanelProps {
     text: string;
     mask: string;
   };
-  sizes: {
+  sizes: {    
     drawThickness: number;
     arrowThickness: number;
     fontSize: number;

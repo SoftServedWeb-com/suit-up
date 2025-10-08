@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
-import { useCanvas } from "../../hooks";
+import { useCanvas } from "@/lib/hooks";
 import type {
   Annotation,
   MaskStroke,
   Point,
   CanvasDimensions,
-} from "../../types";
+} from "../annotation-types";
 
 interface AnnotationCanvasProps {
   dimensions: CanvasDimensions;

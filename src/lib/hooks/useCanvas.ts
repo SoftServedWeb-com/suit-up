@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect } from "react";
-import type { Annotation, MaskStroke, Point, CanvasDimensions } from "../types";
-import { getCanvasCoordinates } from "../utils";
+import type { Annotation, MaskStroke, Point, CanvasDimensions } from "@/components/canvas-studio/annotation-types";
+import { getCanvasCoordinates } from "@/components/canvas-studio/utils";
 
 interface UseCanvasProps {
   dimensions: CanvasDimensions;

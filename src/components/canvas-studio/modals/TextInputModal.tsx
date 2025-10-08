@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { Button, Input, ColorPicker } from "../ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ColorPicker } from "@/components/ui/color-picker";
+
 
 interface TextInputModalProps {
   isOpen: boolean;

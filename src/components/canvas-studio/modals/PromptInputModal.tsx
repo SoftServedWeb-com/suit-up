@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
-import { Button } from "../ui";
+import { Button } from "@/components/ui/button";
 
 interface PromptInputModalProps {
   isOpen: boolean;

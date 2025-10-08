@@ -1,5 +1,4 @@
-import type { Point, CanvasDimensions } from "../types";
-
+import type { Point, CanvasDimensions } from "../annotation-types";
 /**
  * Get canvas coordinates from mouse/touch event
  */

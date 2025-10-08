@@ -8,7 +8,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { ToolButton } from "./ToolButton";
-import type { ToolType } from "../../types";
+import type { ToolType } from "../annotation-types";
 
 interface DrawingToolbarProps {
   activeTool: ToolType;

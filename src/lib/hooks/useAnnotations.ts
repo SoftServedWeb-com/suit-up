@@ -9,8 +9,9 @@ import type {
   ArrowAnnotation,
   TextAnnotation,
   ImageAnnotation,
-} from "../types";
-import { generateId } from "../utils";
+} from "@/components/canvas-studio/annotation-types";
+import { generateId } from "@/components/canvas-studio/utils";
+
 
 interface UseAnnotationsProps {
   maxHistorySize?: number;

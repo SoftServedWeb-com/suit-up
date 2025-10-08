@@ -8,7 +8,7 @@ import {
   Edit,
   Wand2,
 } from "lucide-react";
-import { Button } from "../ui";
+import { Button } from "@/components/ui/button";
 
 interface ActionToolbarProps {
   canUndo: boolean;
@@ -94,7 +94,7 @@ export const ActionToolbar: React.FC<ActionToolbarProps> = ({
             {isGenerating ? "Editing..." : "Edit"}
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             size="sm"
             onClick={onGenerate}
             disabled={isGenerating}

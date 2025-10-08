@@ -1,6 +1,6 @@
 import React from "react";
-import { Button } from "../ui";
-import type { ToolType } from "../../types";
+import { Button } from "@/components/ui/button";
+import type { ToolType } from "../annotation-types";
 
 interface ToolButtonProps {
   tool: ToolType;
@@ -25,7 +25,7 @@ export const ToolButton: React.FC<ToolButtonProps> = ({
     <Button
       variant="ghost"
       size="sm"
-      active={activeTool === tool}
+      // active={activeTool === tool}
       disabled={disabled}
       onClick={() => onSelect(tool)}
       className={className}
