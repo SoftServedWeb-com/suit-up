@@ -5,7 +5,8 @@ import { Upload, Undo, Redo, Trash2, Download, Zap, Lasso, Square, X } from "luc
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { DrawingToolbar, PropertiesPanel } from "./toolbars";
-import { TextInputModal, PromptInputModal } from "./modals";
+import { TextInputModal, PromptInputModal, GeneratedImageModal } from "./modals";
+import { Button } from "@/components/ui/button";
 import {
   loadImage,
   calculateCanvasDimensions,
@@ -62,6 +63,27 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const [colors, setColors] = useState(config.colors);
   const [sizes, setSizes] = useState(config.defaultSizes);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [generatedDataUrl, setGeneratedDataUrl] = useState<string | null>(null);
+  const [gallery, setGallery] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = window.localStorage.getItem("canvas_generated_gallery");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const addToGallery = (dataUrl: string) => {
+    setGallery((prev) => {
+      const next = [dataUrl, ...prev].slice(0, 24);
+      try {
+        window.localStorage.setItem("canvas_generated_gallery", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Modals
   const [showTextModal, setShowTextModal] = useState(false);
@@ -419,7 +441,102 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         const ctx = tempCanvas.getContext("2d");
         if (!ctx) throw new Error("Failed to get canvas context");
 
+        // Draw background image first
         ctx.drawImage(image, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        // Draw annotations on top of the background image
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        annotations.forEach((annotation) => {
+          const isSelected = annotation.id === selectedAnnotationId;
+
+          if (annotation.type === "draw") {
+            if (annotation.path.length > 1) {
+              ctx.strokeStyle = annotation.color;
+              ctx.lineWidth = annotation.thickness;
+              ctx.globalAlpha = isSelected ? 0.7 : 1;
+
+              ctx.beginPath();
+              ctx.moveTo(annotation.path[0].x, annotation.path[0].y);
+              annotation.path.forEach((point) => {
+                ctx.lineTo(point.x, point.y);
+              });
+              ctx.stroke();
+              ctx.globalAlpha = 1;
+            }
+          } else if (annotation.type === "arrow") {
+            ctx.strokeStyle = annotation.color;
+            ctx.lineWidth = annotation.thickness;
+            ctx.globalAlpha = isSelected ? 0.7 : 1;
+
+            // Draw arrow line
+            ctx.beginPath();
+            ctx.moveTo(annotation.startX, annotation.startY);
+            ctx.lineTo(annotation.endX, annotation.endY);
+            ctx.stroke();
+
+            // Draw arrowhead
+            const angle = Math.atan2(
+              annotation.endY - annotation.startY,
+              annotation.endX - annotation.startX
+            );
+            const headLength = 20;
+
+            ctx.beginPath();
+            ctx.moveTo(annotation.endX, annotation.endY);
+            ctx.lineTo(
+              annotation.endX - headLength * Math.cos(angle - Math.PI / 6),
+              annotation.endY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.moveTo(annotation.endX, annotation.endY);
+            ctx.lineTo(
+              annotation.endX - headLength * Math.cos(angle + Math.PI / 6),
+              annotation.endY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          } else if (annotation.type === "text") {
+            ctx.font = `${annotation.fontSize}px Arial`;
+            ctx.fillStyle = annotation.color;
+            ctx.globalAlpha = isSelected ? 0.7 : 1;
+
+            // Shadow for visibility
+            ctx.shadowColor = "rgba(255, 255, 255, 0.8)";
+            ctx.shadowOffsetX = 1;
+            ctx.shadowOffsetY = 1;
+            ctx.shadowBlur = 2;
+
+            ctx.fillText(annotation.text, annotation.x, annotation.y);
+
+            // Reset shadow
+            ctx.shadowColor = "transparent";
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+          } else if (annotation.type === "image") {
+            ctx.globalAlpha = isSelected ? 0.7 : 1;
+
+            const centerX = annotation.x + annotation.width / 2;
+            const centerY = annotation.y + annotation.height / 2;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(annotation.rotation);
+            ctx.drawImage(
+              annotation.imageElement,
+              -annotation.width / 2,
+              -annotation.height / 2,
+              annotation.width,
+              annotation.height
+            );
+            ctx.restore();
+            ctx.globalAlpha = 1;
+          }
+        });
+
+        // Export composed image (background + annotations)
         const imageData = canvasToDataURL(tempCanvas);
 
         const maskData = maskStrokes.length > 0 ? maskStrokes : undefined;
@@ -436,10 +553,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         const response = await apiClient.generateImage(request);
 
         if (response.success && response.result) {
-          onImageGenerated?.(response.result.output);
-
-          const generatedImg = await loadImage(response.result.output);
-          setImage(generatedImg);
+          setGeneratedDataUrl(response.result.output);
+          setPreviewOpen(true);
+          addToGallery(response.result.output);
           clearMaskStrokes();
         } else {
           throw new Error(response.error?.message || "Generation failed");
@@ -461,6 +577,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       onImageGenerated,
       onError,
       clearMaskStrokes,
+      addToGallery,
     ]
   );
 
@@ -641,9 +758,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           />
         </div>
 
-        {/* Canvas Area */}
-        <div className="flex-1 flex items-center justify-center p-8 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100">
-          <div className="w-full h-full flex items-center justify-center max-w-6xl mx-auto">
+        {/* Canvas Area + Right Gallery */}
+        <div className="flex-1 flex items-stretch p-8 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 gap-6">
+          <div className="flex-1 h-full flex items-center justify-center max-w-6xl mx-auto">
             {image ? (
               <div className="relative bg-white rounded-xl shadow-xl border border-slate-200 p-4 max-w-full max-h-full">
                 <AnnotationCanvas
@@ -668,6 +785,56 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 />
               </div>
             ) : null}
+          </div>
+          {/* Right Gallery */}
+          <div className="w-64 shrink-0 bg-white border border-slate-200 rounded-xl p-3 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-slate-700">Generated</h3>
+              <button
+                className="text-xs text-slate-500 hover:text-slate-700"
+                onClick={() => {
+                  setGallery([]);
+                  try { window.localStorage.removeItem("canvas_generated_gallery"); } catch {}
+                }}
+              >
+                Clear
+              </button>
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {gallery.map((url, idx) => (
+                <div key={idx} className="border rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`Gen ${idx+1}`} className="w-full aspect-square object-cover" />
+                  <div className="p-2 flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={async () => {
+                        try {
+                          const img = await loadImage(url);
+                          setImage(img);
+                        } catch {}
+                      }}
+                    >
+                      Use on Canvas
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      onClick={() => {
+                        setGeneratedDataUrl(url);
+                        setPreviewOpen(true);
+                      }}
+                    >
+                      Preview
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {gallery.length === 0 && (
+                <div className="text-xs text-slate-500">No generations yet.</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -925,6 +1092,18 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           </div>
         </div>
       )}
+      <GeneratedImageModal
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        imageDataUrl={generatedDataUrl}
+        onSave={async () => {
+          if (!generatedDataUrl || !apiClient) return;
+          const res = await apiClient.saveGeneratedImage(generatedDataUrl);
+          if (res.success) {
+            setPreviewOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

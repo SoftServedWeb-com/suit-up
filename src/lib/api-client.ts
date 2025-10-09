@@ -46,8 +46,7 @@ export class CanvasAPIClient {
       return {
         success: true,
         result: {
-          output: data.resultImageUrl,
-          requestId: data.requestId,
+          output: data.resultImageDataUrl,
         },
       };
     } catch (error) {
@@ -56,6 +55,23 @@ export class CanvasAPIClient {
         success: false,
         error: error instanceof Error ? error.message : "Generation failed",
       };
+    }
+  }
+
+  async saveGeneratedImage(dataUrl: string): Promise<{ success: boolean; url?: string; error?: string }> {
+    try {
+      const res = await fetch("/api/canvas/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dataUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || "Failed to save image" };
+      }
+      return { success: true, url: data.url };
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : "Failed to save image" };
     }
   }
 

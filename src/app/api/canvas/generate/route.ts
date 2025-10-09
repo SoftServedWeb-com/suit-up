@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
+import { HarmCategory, HarmBlockThreshold } from "@google/genai";
 import crypto from "crypto";
 import { RedirectToSignIn } from "@clerk/nextjs";
 import { fileToBase64, saveBase64ToS3, uploadToS3 } from "@/lib/aws-s3/utils";
@@ -31,26 +30,38 @@ export async function POST(request: Request) {
     const imageFile = formData.get("image") as File;
     const prompt = formData.get("prompt") as string;
     const maskDataStr = formData.get("maskData") as string;
-
+    
+    // Log parsed form data without re-reading the request body
+    try {
+      const logged = Array.from(formData.keys());
+      console.log("[Canvas generate] Received form fields:", logged);
+    } catch (e) {
+      console.log("[Canvas generate] Could not log form data keys");
+    }
+    
     if (!imageFile || !prompt) {
       return NextResponse.json(
         { error: "Missing image or prompt" },
         { status: 400 }
       );
     }
-
-    const imageUrl = await uploadToS3(imageFile, "canvas-input");
+    
     const imageBase64 = await fileToBase64(imageFile);
-
+    
     let enhancedPrompt = prompt;
     if (maskDataStr) {
-      enhancedPrompt = `Edit the selected area of this image: ${prompt}. Only modify the masked region, keep everything else identical.`;
+      enhancedPrompt = `You are to create a real outfit from the given image. ${prompt}`;
     }
 
     const promptArray = [
       { text: enhancedPrompt },
       { inlineData: { mimeType: imageFile.type, data: imageBase64 } },
     ];
+
+    // For debugging: create a data URL to view the image in the browser console
+    const imageDataUrl = `data:${imageFile.type};base64,${imageBase64}`;
+    console.log("[Canvas generate] Prompt array WITH IMAGE:", promptArray);
+    console.log("[Canvas generate] To view the image being sent to Gemini, copy and paste this in your browser address bar or devtools:", imageDataUrl);
 
     const response = await genAI.models.generateContent({
       model: "gemini-2.5-flash-image-preview",
@@ -81,22 +92,24 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log("Response from Gemini AI:", response);
+
     if (response.promptFeedback?.blockReason) {
       throw new Error(
         `Content blocked: ${response.promptFeedback.blockReason}`
       );
     }
 
-    let resultUrl: string | null = null;
+    let resultDataBase64: string | null = null;
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData?.data) {
-        resultUrl = await saveBase64ToS3(part.inlineData.data, "image/png");
+        resultDataBase64 = part.inlineData.data;
         break;
       }
     }
 
-    if (!resultUrl) {
+    if (!resultDataBase64) {
       throw new Error("No image generated");
     }
 
@@ -105,24 +118,11 @@ export async function POST(request: Request) {
       throw new Error("Failed to consume credit");
     }
 
-    const predictionId = `canvas-${crypto.randomUUID()}`;
-    const record = await db.tryOnRequest.create({
-      data: {
-        predictionId,
-        userId,
-        modelImageUrl: imageUrl,
-        garmentImageUrl: resultUrl,
-        category: "canvas-edit",
-        status: "COMPLETED",
-        creditsUsed: 1,
-        resultImageUrl: resultUrl,
-      },
-    });
-
+    // Return base64 data URL for client-side preview; saving is a separate step
+    const resultDataUrl = `data:image/png;base64,${resultDataBase64}`;
     return NextResponse.json({
       success: true,
-      requestId: record.id,
-      resultImageUrl: resultUrl,
+      resultImageDataUrl: resultDataUrl,
       creditsRemaining: creditResult.remaining,
     });
   } catch (error: any) {
