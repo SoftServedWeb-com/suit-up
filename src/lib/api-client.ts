@@ -10,6 +10,8 @@ export class CanvasAPIClient {
       const imageBlob = await this.base64ToBlob(request.imageData);
       formData.append("image", imageBlob, "canvas-image.png");
       formData.append("prompt", request.prompt || "");
+
+      console.log("[CanvasAPIClient] Form data:", formData);
       
       // If we have mask data, include it
       if (request.maskData && request.maskData.length > 0) {

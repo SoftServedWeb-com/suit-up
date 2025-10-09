@@ -3,79 +3,14 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import mime from "mime";
+import {  HarmCategory, HarmBlockThreshold } from "@google/genai";
+
 import crypto from "crypto";
+import { fileToBase64, saveGeneratedImageToS3, uploadToS3 } from "@/lib/aws-s3/utils";
+import { genAI } from "@/lib/google";
 
-// Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.TRIALROOM_AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.TRIALROOM_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.TRIALROOM_AWS_SECRET_ACCESS_KEY!,
-  },
-});
 
-const BUCKET_NAME = process.env.TRIALROOM_AWS_S3_BUCKET_NAME!;
 
-// Initialize Google GenAI
-const genAI = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
-});
-
-// Helper function to upload file to S3
-async function uploadToS3(file: File, prefix: string): Promise<string> {
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}-${file.name}`;
-  
-  const uploadParams = {
-    Bucket: BUCKET_NAME,
-    Key: fileName,
-    Body: fileBuffer,
-    ContentType: file.type,
-  };
-
-  try {
-    await s3Client.send(new PutObjectCommand(uploadParams));
-    
-    // Return the public URL
-    return `https://${BUCKET_NAME}.s3.${process.env.TRIALROOM_AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
-  } catch (error) {
-    console.error("S3 upload error:", error);
-    throw new Error("File upload Failed. Please try again.");
-  }
-}
-
-// Helper function to convert file to base64
-async function fileToBase64(file: File): Promise<string> {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  return buffer.toString('base64');
-}
-
-// Helper function to save generated image to S3
-async function saveGeneratedImageToS3(base64Data: string, mimeType: string): Promise<string> {
-  const buffer = Buffer.from(base64Data, 'base64');
-  const extension = mime.getExtension(mimeType) || 'png';
-  const fileName = `generated-tryon-${Date.now()}-${crypto.randomUUID()}.${extension}`;
-  
-  const uploadParams = {
-    Bucket: BUCKET_NAME,
-    Key: fileName,
-    Body: buffer,
-    ContentType: mimeType,
-  };
-
-  try {
-    await s3Client.send(new PutObjectCommand(uploadParams));
-    
-    // Return the public URL
-    return `https://${BUCKET_NAME}.s3.${process.env.TRIALROOM_AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
-  } catch (error) {
-    console.error("S3 upload error for generated image:", error);
-    throw new Error("Failed to save generated image. Please try again.");
-  }
-}
 
 // Helper function for exponential backoff retry
 async function sleep(ms: number): Promise<void> {

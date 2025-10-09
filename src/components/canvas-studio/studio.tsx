@@ -3,6 +3,7 @@
 import { AnnotationEditor } from "./annotation-editor";
 import { CanvasAPIClient } from "@/lib/api-client";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export default function CanvasStudio() {
   const [apiClient] = useState(() => new CanvasAPIClient());
@@ -13,7 +14,7 @@ export default function CanvasStudio() {
 
   const handleError = (error: string) => {
     console.error("Error:", error);
-    alert(`Error: ${error}`);
+    toast.error(`Error: ${error}`);
   };
 
   return (

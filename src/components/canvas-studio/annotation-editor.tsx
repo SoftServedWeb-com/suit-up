@@ -405,8 +405,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const handleGenerate = useCallback(
     async (prompt: string) => {
       if (!apiClient || !image) {
-        onError?.("API client not configured or no image loaded");
-        return;
+        return onError?.("API client not configured or no image loaded");
+    
       }
 
       setIsGenerating(true);
