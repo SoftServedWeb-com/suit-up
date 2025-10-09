@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
 import { HarmCategory, HarmBlockThreshold } from "@google/genai";
-import crypto from "crypto";
 import { RedirectToSignIn } from "@clerk/nextjs";
-import { fileToBase64, saveBase64ToS3, uploadToS3 } from "@/lib/aws-s3/utils";
+import { fileToBase64 } from "@/lib/aws-s3/utils";
 import { genAI } from "@/lib/google";
 
 export async function POST(request: Request) {
@@ -29,8 +27,9 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const imageFile = formData.get("image") as File;
     const prompt = formData.get("prompt") as string;
+    const materialImage = formData.get("materialImage") as File | null;
     const maskDataStr = formData.get("maskData") as string;
-    
+
     // Log parsed form data without re-reading the request body
     try {
       const logged = Array.from(formData.keys());
@@ -38,33 +37,64 @@ export async function POST(request: Request) {
     } catch (e) {
       console.log("[Canvas generate] Could not log form data keys");
     }
-    
+
     if (!imageFile || !prompt) {
       return NextResponse.json(
         { error: "Missing image or prompt" },
         { status: 400 }
       );
     }
-    
+
     const imageBase64 = await fileToBase64(imageFile);
-    
+
     let enhancedPrompt = prompt;
+    console.log("[Canvas generate] PROMPT before enhancment:", prompt);
     if (maskDataStr) {
-      enhancedPrompt = `You are to create a real outfit from the given image. ${prompt}`;
+      enhancedPrompt = `You are to mask the selected section and make the following changes : ${prompt}`;
     }
 
-    const promptArray = [
-      { text: enhancedPrompt },
+    const promptArray: any[] = [
+      { text: `These are the instructions you must follow: ${enhancedPrompt}` },
       { inlineData: { mimeType: imageFile.type, data: imageBase64 } },
     ];
+    if (materialImage) {
+      const materialBase64 = await fileToBase64(materialImage);
+      // Add a clarifying text before material image, then the material image itself
+      promptArray.push({
+        text: "Use this additional image as the fabric/material reference for the outfit.",
+      });
+      promptArray.push({
+        inlineData: { mimeType: materialImage.type, data: materialBase64 },
+      });
+      const materialDataUrl = `data:${materialImage.type};base64,${materialBase64}`;
+      console.log(
+        "[Canvas generate] Material image present. Base64 length:",
+        materialBase64.length
+      );
+      console.log(
+        "[Canvas generate] Material data URL (trimmed):",
+        materialDataUrl.substring(0, 128) + "..."
+      );
+    } else {
+      console.log("[Canvas generate] No material image provided");
+    }
 
-    // For debugging: create a data URL to view the image in the browser console
-    const imageDataUrl = `data:${imageFile.type};base64,${imageBase64}`;
-    console.log("[Canvas generate] Prompt array WITH IMAGE:", promptArray);
-    console.log("[Canvas generate] To view the image being sent to Gemini, copy and paste this in your browser address bar or devtools:", imageDataUrl);
+    // For debugging: log prompt composition and trimmed base image data URL
+    // const imageDataUrl = `data:${imageFile.type};base64,${imageBase64}`;
+    console.log(
+      "[Canvas generate] Prompt array parts count:",
+      enhancedPrompt
+    );
+    // console.log(
+    //   "[Canvas generate] Base canvas data URL (trimmed):",
+    //   imageDataUrl.substring(0, 128) + "..."
+    // );
 
     const response = await genAI.models.generateContent({
       model: "gemini-2.5-flash-image-preview",
+      
+
+      
       contents: promptArray,
       config: {
         safetySettings: [
@@ -85,6 +115,7 @@ export async function POST(request: Request) {
             threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
           },
         ],
+        systemInstruction:`You are a fashion designer. You are to create a real mockup for the outfit from the given drawings. ADD THE CLOTHING TO A MANNEQUIN.${enhancedPrompt}`,
         temperature: 0.4,
         topK: 32,
         topP: 1,

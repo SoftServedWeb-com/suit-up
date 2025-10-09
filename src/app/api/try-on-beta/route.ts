@@ -10,8 +10,6 @@ import { fileToBase64, saveGeneratedImageToS3, uploadToS3 } from "@/lib/aws-s3/u
 import { genAI } from "@/lib/google";
 
 
-
-
 // Helper function for exponential backoff retry
 async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

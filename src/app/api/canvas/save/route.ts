@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     // Optionally persist a lightweight record
     await db.tryOnRequest.create({
       data: {
-        predictionId: `canvas-save-${Date.now()}`,
+        predictionId:`canvas-save-${Date.now()}`,
         userId,
         modelImageUrl: url,
         garmentImageUrl: url,

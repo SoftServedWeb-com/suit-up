@@ -94,6 +94,7 @@ export interface GenerationRequest {
     imageData: string; // base64 encoded image
     maskData?: any[]; // mask strokes array for Nano Banana API
     prompt?: string;
+    materialFile?: File; // optional material reference image
     strength?: number; // 0-1, how much to change the image
     guidance?: number; // 1-20, how closely to follow the prompt
     steps?: number; // number of inference steps

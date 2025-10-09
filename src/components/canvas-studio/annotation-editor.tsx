@@ -52,6 +52,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 }) => {
   const config = { ...defaultConfig, ...userConfig };
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const materialFileRef = useRef<File | null>(null);
 
   // State
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -545,6 +546,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           imageData,
           maskData,
           prompt,
+          materialFile: materialFileRef.current || undefined,
           strength: 0.8,
           guidance: 7.5,
           steps: 20,
@@ -1005,8 +1007,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           setShowPromptModal(false);
           setActiveTool(null);
         }}
-        onSubmit={(prompt) => {
+        onSubmit={(prompt, materialFile) => {
           if (apiClient) {
+            // Store material file to include in next generation request
+            materialFileRef.current = materialFile || null;
             handleGenerate(prompt);
           } else {
             alert(`Demo Mode: Would generate with prompt: "${prompt}"`);

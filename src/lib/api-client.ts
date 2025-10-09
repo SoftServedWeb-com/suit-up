@@ -12,6 +12,10 @@ export class CanvasAPIClient {
       formData.append("prompt", request.prompt || "");
 
       console.log("[CanvasAPIClient] Form data:", formData);
+      // Attach material file if present
+      if (request.materialFile) {
+        formData.append("materialImage", request.materialFile, request.materialFile.name || "material.png");
+      }
       
       // If we have mask data, include it
       if (request.maskData && request.maskData.length > 0) {
