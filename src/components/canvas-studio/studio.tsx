@@ -10,39 +10,38 @@ export default function CanvasStudio() {
 
   const handleImageGenerated = (imageUrl: string) => {
     console.log("Generated image:", imageUrl);
+    toast.success("Image generated successfully!");
   };
 
   const handleError = (error: string) => {
     console.error("Error:", error);
-    toast.error(`Error: ${error}`);
+    toast.error(error);
   };
 
   return (
-    <div className="h-screen">
-      <AnnotationEditor
-        apiClient={apiClient}
-        onImageGenerated={handleImageGenerated}
-        onError={handleError}
-        config={{
-          colors: {
-            draw: "#000000",
-            arrow: "#ef4444",
-            text: "#1f2937",
-            mask: "#3b82f6",
-          },
-          defaultSizes: {
-            drawThickness: 3,
-            arrowThickness: 3,
-            fontSize: 16,
-            brushSize: 30,
-          },
-          canvas: {
-            maxWidth: 1400,
-            maxHeight: 1800,
-            backgroundColor: "#ffffff",
-          },
-        }}
-      />
-    </div>
+    <AnnotationEditor
+      apiClient={apiClient}
+      onImageGenerated={handleImageGenerated}
+      onError={handleError}
+      config={{
+        colors: {
+          draw: "#000000",
+          arrow: "#ef4444",
+          text: "#1f2937",
+          mask: "#3b82f6",
+        },
+        defaultSizes: {
+          drawThickness: 3,
+          arrowThickness: 3,
+          fontSize: 16,
+          brushSize: 30,
+        },
+        canvas: {
+          maxWidth: 1200,
+          maxHeight: 1600,
+          backgroundColor: "#ffffff",
+        },
+      }}
+    />
   );
 }

@@ -8,6 +8,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { ToolButton } from "./ToolButton";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ToolType } from "../annotation-types";
 
 interface DrawingToolbarProps {
@@ -32,64 +33,65 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
   };
 
   return (
-    <div
-      className={`flex flex-col gap-2 p-3 rounded-lg shadow-lg border max-h-96 overflow-y-auto ${className || 'bg-white border-gray-200'}`}
-    >
-      <h3 className="text-sm font-medium text-gray-700 mb-2">Drawing Tools</h3>
+    <Card className={`border-border ${className || ''}`}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-medium">Drawing Tools</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <ToolButton
+          tool="draw"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("draw") ? () => {} : onToolSelect}
+          icon={<Pen size={18} />}
+          label="Draw"
+          disabled={isToolDisabled("draw")}
+        />
 
-      <ToolButton
-        tool="draw"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("draw") ? () => {} : onToolSelect}
-        icon={<Pen size={18} />}
-        label="Draw"
-        disabled={isToolDisabled("draw")}
-      />
+        <ToolButton
+          tool="arrow"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("arrow") ? () => {} : onToolSelect}
+          icon={<ArrowRight size={18} />}
+          label="Arrow"
+          disabled={isToolDisabled("arrow")}
+        />
 
-      <ToolButton
-        tool="arrow"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("arrow") ? () => {} : onToolSelect}
-        icon={<ArrowRight size={18} />}
-        label="Arrow"
-        disabled={isToolDisabled("arrow")}
-      />
+        <ToolButton
+          tool="text"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("text") ? () => {} : onToolSelect}
+          icon={<Type size={18} />}
+          label="Text"
+          disabled={isToolDisabled("text")}
+        />
 
-      <ToolButton
-        tool="text"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("text") ? () => {} : onToolSelect}
-        icon={<Type size={18} />}
-        label="Text"
-        disabled={isToolDisabled("text")}
-      />
+        <ToolButton
+          tool="image"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("image") ? () => {} : onToolSelect}
+          icon={<Image size={18} />}
+          label="Image"
+          disabled={isToolDisabled("image")}
+        />
 
-      <ToolButton
-        tool="image"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("image") ? () => {} : onToolSelect}
-        icon={<Image size={18} />}
-        label="Image"
-        disabled={isToolDisabled("image")}
-      />
+        <ToolButton
+          tool="mask"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("mask") ? () => {} : onToolSelect}
+          icon={<Lasso size={18} />}
+          label="Mask"
+          disabled={isToolDisabled("mask")}
+        />
 
-      <ToolButton
-        tool="mask"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("mask") ? () => {} : onToolSelect}
-        icon={<Lasso size={18} />}
-        label="Mask"
-        disabled={isToolDisabled("mask")}
-      />
-
-      <ToolButton
-        tool="prompt"
-        activeTool={activeTool}
-        onSelect={isToolDisabled("prompt") ? () => {} : onToolSelect}
-        icon={<MessageSquare size={18} />}
-        label="Prompt"
-        disabled={isToolDisabled("prompt")}
-      />
-    </div>
+        <ToolButton
+          tool="prompt"
+          activeTool={activeTool}
+          onSelect={isToolDisabled("prompt") ? () => {} : onToolSelect}
+          icon={<MessageSquare size={18} />}
+          label="Prompt"
+          disabled={isToolDisabled("prompt")}
+        />
+      </CardContent>
+    </Card>
   );
 };

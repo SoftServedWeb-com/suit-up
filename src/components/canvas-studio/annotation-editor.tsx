@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Square, Home } from "lucide-react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { DrawingToolbar, PropertiesPanel } from "./toolbars";
@@ -15,6 +15,12 @@ import WelcomeStartModal from "./WelcomeStartModal";
 import GeneratedGallery from "./GeneratedGallery";
 import MaskPromptBar from "./MaskPromptBar";
 import MainActionsToolbar from "./MainActionsToolbar";
+import Header from "@/components/page/header";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import FashionQuote from "@/components/fashion-quote";
 
 import type { AnnotationConfig, GenerationRequest } from "./annotation-types";
 
@@ -78,6 +84,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       return [];
     }
   });
+  const [isGalleryOpen, setIsGalleryOpen] = useState(true);
+  const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
 
   const addToGallery = (dataUrl: string) => {
     setGallery((prev) => {
@@ -617,166 +625,461 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   // Welcome modal moved to WelcomeStartModal component
 
   return (
-    <div className={`relative h-full bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 overflow-hidden ${className}`}>
-      {/* Top Left - Home Button & Canvas Info (only show when canvas is active) */}
-      {image && (
-        <div className="fixed top-6 left-6 z-30 space-y-3">
-          <button
-            onClick={() => {
-              if (window.confirm("Go back to start? Any unsaved work will be lost.")) {
+    <div className={`min-h-screen bg-background ${className}`}>
+      <Header />
+      
+      <main className="max-w-7xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
+        {/* Creative Studios Navigation */}
+        <div className="mb-8">
+          <h2 className="text-xl font-serif tracking-tight text-foreground mb-4 flex items-center gap-2">
+            <TestTube className="h-5 w-5 text-primary" />
+            Creative Studios
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Explore AI-powered creative tools for virtual try-on and image transformation.
+          </p>
+          
+          <div className="flex gap-3 text-sm">
+            <Link href="/dashboard">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 px-3 text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-3 w-3 mr-2" />
+                Try-On Studio
+              </Button>
+            </Link>
+            
+            <Link href="/prompt-studio">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 px-3 text-muted-foreground hover:text-foreground"
+              >
+                <Sparkles className="h-3 w-3 mr-2" />
+                Prompt Studio
+              </Button>
+            </Link>
+            
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 px-3 text-primary hover:text-primary/90 bg-primary/5"
+              >
+                <Palette className="h-3 w-3 mr-2" />
+                Canvas Studio
+                <Badge variant="secondary" className="ml-2 text-xs">
+                  Active
+                </Badge>
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Main Canvas Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-serif tracking-tight text-foreground">
+                Canvas Studio
+              </p>
+              <span className="opacity-70 text-sm text-muted-foreground">
+                Create, annotate, and transform images with AI
+              </span>
+            </div>
+            {image && (
+              <Badge variant="outline" className="text-xs">
+                {dimensions.width} × {dimensions.height}px
+              </Badge>
+            )}
+          </div>
+
+
+          {/* Full-Screen Canvas Card */}
+          <Card className="border-ring bg-background">
+            <CardContent className="p-0">
+              <div className="relative flex items-center justify-center min-h-[calc(100vh-400px)] bg-gradient-to-br from-slate-50 to-slate-100">
+                {image ? (
+                  <div className="relative w-full h-full flex items-center justify-center p-6">
+                    <AnnotationCanvas
+                      dimensions={dimensions}
+                      annotations={annotations}
+                      maskStrokes={maskStrokes}
+                      currentPath={currentPath}
+                      isDrawing={isDrawing}
+                      activeTool={activeTool}
+                      startPos={startPos}
+                      currentMousePos={currentMousePos}
+                      selectedAnnotationId={selectedAnnotationId}
+                      isDragging={isDragging}
+                      dragType={dragType}
+                      image={image}
+                      colors={colors}
+                      sizes={sizes}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      className="max-w-full max-h-full object-contain shadow-xl rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground py-32">
+                    <Square size={80} className="mb-4 opacity-30" strokeWidth={1} />
+                    <p className="text-lg font-medium">Your canvas will appear here</p>
+                    <p className="text-sm mt-2 opacity-70">Get started by uploading an image or creating a blank canvas</p>
+                  </div>
+                )}
+
+                {/* Drawing Tools & Properties Overlay - Left Side */}
+                {image && (
+                  <>
+                    {isToolsPanelOpen ? (
+                      <div className="absolute top-4 left-4 w-64 max-h-[calc(100%-2rem)] overflow-hidden">
+                        <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
+                          <CardHeader className="pb-2 px-3 py-2">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-xs font-medium">Drawing Tools</CardTitle>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                onClick={() => setIsToolsPanelOpen(false)}
+                                title="Collapse tools"
+                              >
+                                ‹
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="p-3 space-y-3 max-h-[calc(100vh-500px)] overflow-y-auto">
+                            {/* Tools Grid */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                variant={activeTool === "draw" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "draw") {
+                                    setActiveTool(null);
+                                  } else {
+                                    setActiveTool("draw");
+                                  }
+                                }}
+                                disabled={isGenerating}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <Pen className="h-4 w-4" />
+                                <span className="text-[10px]">Draw</span>
+                              </Button>
+                              <Button
+                                variant={activeTool === "arrow" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "arrow") {
+                                    setActiveTool(null);
+                                  } else {
+                                    setActiveTool("arrow");
+                                  }
+                                }}
+                                disabled={isGenerating || activeTool === "mask"}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <ArrowRight className="h-4 w-4" />
+                                <span className="text-[10px]">Arrow</span>
+                              </Button>
+                              <Button
+                                variant={activeTool === "text" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "text") {
+                                    setActiveTool(null);
+                                  } else {
+                                    setActiveTool("text");
+                                  }
+                                }}
+                                disabled={isGenerating || activeTool === "mask"}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <Type className="h-4 w-4" />
+                                <span className="text-[10px]">Text</span>
+                              </Button>
+                              <Button
+                                variant={activeTool === "image" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "image") {
+                                    setActiveTool(null);
+                                  } else {
+                                    setActiveTool("image");
+                                  }
+                                }}
+                                disabled={isGenerating || activeTool === "mask"}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <Image className="h-4 w-4" />
+                                <span className="text-[10px]">Image</span>
+                              </Button>
+                              <Button
+                                variant={activeTool === "mask" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "mask") {
+                                    setActiveTool(null);
+                                    setMaskPrompt("");
+                                  } else {
+                                    setActiveTool("mask");
+                                  }
+                                }}
+                                disabled={isGenerating}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <Lasso className="h-4 w-4" />
+                                <span className="text-[10px]">Mask</span>
+                              </Button>
+                              <Button
+                                variant={activeTool === "prompt" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  if (activeTool === "prompt") {
+                                    setActiveTool(null);
+                                  } else {
+                                    setActiveTool("prompt");
+                                  }
+                                }}
+                                disabled={isGenerating || activeTool === "mask"}
+                                className="h-auto py-2 flex flex-col items-center gap-1"
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-[10px]">Prompt</span>
+                              </Button>
+                            </div>
+
+                            {/* Properties */}
+                            {activeTool && activeTool !== "prompt" && (activeTool === "draw" || activeTool === "arrow" || activeTool === "text" || activeTool === "mask") && (
+                              <div className="space-y-3 pt-2 border-t border-border">
+                                <div className="space-y-2">
+                                  <label className="text-xs text-muted-foreground">Color</label>
+                                  <input
+                                    type="color"
+                                    value={colors[activeTool as keyof typeof colors]}
+                                    onChange={(e) => handleColorChange(activeTool, e.target.value)}
+                                    className="w-full h-10 rounded cursor-pointer border border-border"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs text-muted-foreground">
+                                      {activeTool === "text" ? "Font Size" : activeTool === "mask" ? "Brush Size" : "Thickness"}
+                                    </label>
+                                    <span className="text-xs font-medium">
+                                      {activeTool === "draw" ? sizes.drawThickness :
+                                       activeTool === "arrow" ? sizes.arrowThickness :
+                                       activeTool === "text" ? sizes.fontSize :
+                                       sizes.brushSize}
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="range"
+                                    min={activeTool === "text" ? 12 : activeTool === "mask" ? 10 : 1}
+                                    max={activeTool === "text" ? 72 : activeTool === "mask" ? 100 : 20}
+                                    value={
+                                      activeTool === "draw" ? sizes.drawThickness :
+                                      activeTool === "arrow" ? sizes.arrowThickness :
+                                      activeTool === "text" ? sizes.fontSize :
+                                      sizes.brushSize
+                                    }
+                                    onChange={(e) => {
+                                      const value = parseInt(e.target.value);
+                                      if (activeTool === "draw") handleSizeChange("drawThickness", value);
+                                      else if (activeTool === "arrow") handleSizeChange("arrowThickness", value);
+                                      else if (activeTool === "text") handleSizeChange("fontSize", value);
+                                      else if (activeTool === "mask") handleSizeChange("brushSize", value);
+                                    }}
+                                    className="w-full"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      <div className="absolute top-4 left-4">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-9 shadow-xl"
+                          onClick={() => setIsToolsPanelOpen(true)}
+                          title="Show drawing tools"
+                        >
+                          <Palette className="h-4 w-4 mr-2" />
+                          Tools
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Generated Images Overlay - Right Side */}
+                {gallery.length > 0 && (
+                  <>
+                    {isGalleryOpen ? (
+                      <div className="absolute top-4 right-4 w-48 max-h-[calc(100%-2rem)] overflow-hidden">
+                        <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
+                          <CardHeader className="pb-2 px-3 py-2">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-xs font-medium">Generated ({gallery.length})</CardTitle>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                  onClick={() => setIsGalleryOpen(false)}
+                                  title="Collapse gallery"
+                                >
+                                  ›
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                  onClick={() => { 
+                                    setGallery([]); 
+                                    try { 
+                                      window.localStorage.removeItem("canvas_generated_gallery"); 
+                                    } catch {} 
+                                  }}
+                                  title="Clear all"
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="p-2 space-y-2 max-h-[calc(100vh-500px)] overflow-y-auto">
+                            {gallery.map((url, idx) => (
+                              <div key={idx} className="border border-border rounded-md overflow-hidden bg-card hover:shadow-md transition-shadow">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt={`Generated ${idx+1}`} className="w-full aspect-square object-cover" />
+                                <div className="p-1.5 flex gap-1.5">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 px-2 text-[10px] flex-1"
+                                    onClick={async () => {
+                                      try {
+                                        const img = await loadImage(url);
+                                        const maxWidth = config.canvas.maxWidth;
+                                        const maxHeight = config.canvas.maxHeight;
+                                        const canvasDims = calculateCanvasDimensions(
+                                          img.width,
+                                          img.height,
+                                          maxWidth,
+                                          maxHeight
+                                        );
+                                        setImage(img);
+                                        setDimensions(canvasDims);
+                                      } catch {}
+                                    }}
+                                  >
+                                    Use
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-6 px-2 text-[10px] flex-1"
+                                    onClick={() => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      <div className="absolute top-4 right-4">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-9 shadow-xl"
+                          onClick={() => setIsGalleryOpen(true)}
+                          title="Show generated images"
+                        >
+                          <Image className="h-4 w-4 mr-2" />
+                          {gallery.length}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+          {/* Mask Prompt Bar - Only show when mask tool is active */}
+          <MaskPromptBar
+            isActive={activeTool === "mask"}
+            maskStrokesCount={maskStrokes.length}
+            maskPrompt={maskPrompt}
+            setMaskPrompt={setMaskPrompt}
+            onSubmit={() => {
+              if (apiClient) {
+                handleGenerate(maskPrompt);
+              } else {
+                alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
+              }
+            }}
+            onClear={() => { clearMaskStrokes(); setMaskPrompt(""); }}
+            onCancel={() => { setActiveTool(null); setMaskPrompt(""); clearMaskStrokes(); }}
+            isApiAvailable={!!apiClient}
+          />
+
+          {/* Actions Bar */}
+          <MainActionsToolbar
+            isVisible={!!image}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            isGenerating={isGenerating}
+            isImageLoaded={!!image}
+            isMaskActive={activeTool === "mask"}
+            hasMaskSelection={maskStrokes.length > 0}
+            maskPrompt={maskPrompt}
+            onClickUpload={() => fileInputRef.current?.click()}
+            onClickNew={() => {
+              if (window.confirm("Create a new canvas? Any unsaved work will be lost.")) {
                 setShowStartOptions(true);
                 setImage(null);
                 clearAll();
               }
             }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xl border border-slate-300 rounded-xl hover:bg-white transition-all duration-200 shadow-lg text-slate-700 hover:text-slate-900 font-medium text-sm"
-            title="Back to start"
-          >
-            <Home size={16} />
-            <span>Home</span>
-          </button>
-          
-          {/* Canvas Dimensions Indicator */}
-          <div className="px-3 py-2 bg-white/90 backdrop-blur-xl border border-slate-300 rounded-xl shadow-lg">
-            <p className="text-xs text-slate-600 font-medium">
-              Canvas: {dimensions.width} × {dimensions.height}px
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Full Screen Canvas */}
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        {image ? (
-          <div
-            className="relative w-full max-h-full flex items-center justify-center"
-            style={{ maxWidth: `min(100%, ${config.canvas.maxWidth}px)` }}
-          >
-            <AnnotationCanvas
-              dimensions={dimensions}
-              annotations={annotations}
-              maskStrokes={maskStrokes}
-              currentPath={currentPath}
-              isDrawing={isDrawing}
-              activeTool={activeTool}
-              startPos={startPos}
-              currentMousePos={currentMousePos}
-              selectedAnnotationId={selectedAnnotationId}
-              isDragging={isDragging}
-              dragType={dragType}
-              image={image}
-              colors={colors}
-              sizes={sizes}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-lg"
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center text-slate-400 pointer-events-none">
-            <Square size={80} className="mb-4 opacity-20" strokeWidth={1} />
-            <p className="text-sm font-medium opacity-40">Your canvas will appear here</p>
-          </div>
-        )}
-      </div>
-
-      {/* Left Overlay - Drawing Toolbar (only show when canvas is active) */}
-      {image && (
-        <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
-          <div className="space-y-4">
-            <DrawingToolbar
-              activeTool={activeTool}
-              onToolSelect={(tool) => {
-                if (tool === activeTool) {
-                  setActiveTool(null);
-                  if (tool === "mask") {
-                    setMaskPrompt("");
-                  }
+            onUndo={undo}
+            onRedo={redo}
+            onClear={clearAll}
+            onDownload={handleDownload}
+            onGenerate={() => {
+              if (
+                activeTool === "mask" &&
+                maskStrokes.length > 0 &&
+                maskPrompt.trim()
+              ) {
+                if (apiClient) {
+                  handleGenerate(maskPrompt);
                 } else {
-                  setActiveTool(tool);
+                  alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
                 }
-              }}
-              isMaskToolActive={activeTool === "mask"}
-              isGenerating={isGenerating}
-              className="bg-white/90 backdrop-blur-xl border-slate-300"
-            />
-
-            <PropertiesPanel
-              activeTool={activeTool}
-              colors={colors}
-              sizes={sizes}
-              onColorChange={handleColorChange}
-              onSizeChange={handleSizeChange}
-              className="bg-white/90 backdrop-blur-xl border-slate-300"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Right Overlay - Gallery (only show when canvas is active) */}
-      <GeneratedGallery
-        isVisible={!!image}
-        gallery={gallery}
-        onUseImage={(img) => {
-          // Recompute to respect max width while preserving aspect ratio
-          const maxWidth = config.canvas.maxWidth;
-          const maxHeight = config.canvas.maxHeight;
-          const canvasDims = calculateCanvasDimensions(
-            img.width,
-            img.height,
-            maxWidth,
-            maxHeight
-          );
-          setImage(img);
-          setDimensions(canvasDims);
-        }}
-        onView={(url) => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
-        onClearAll={() => { setGallery([]); try { window.localStorage.removeItem("canvas_generated_gallery"); } catch {} }}
-      />
-
-      {/* Bottom Toolbar - Main Actions (only show when canvas is active) */}
-      <MainActionsToolbar
-        isVisible={!!image}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        isGenerating={isGenerating}
-        isImageLoaded={!!image}
-        isMaskActive={activeTool === "mask"}
-        hasMaskSelection={maskStrokes.length > 0}
-        maskPrompt={maskPrompt}
-        onClickUpload={() => fileInputRef.current?.click()}
-        onClickNew={() => {
-          if (window.confirm("Create a new canvas? Any unsaved work will be lost.")) {
-            setShowStartOptions(true);
-            setImage(null);
-            clearAll();
-          }
-        }}
-        onUndo={undo}
-        onRedo={redo}
-        onClear={clearAll}
-        onDownload={handleDownload}
-        onGenerate={() => {
-          if (
-            activeTool === "mask" &&
-            maskStrokes.length > 0 &&
-            maskPrompt.trim()
-          ) {
-            if (apiClient) {
-              handleGenerate(maskPrompt);
-            } else {
-              alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
-            }
-          } else {
-            if (apiClient) {
-              setShowPromptModal(true);
-            } else {
-              alert("Demo Mode: Would open prompt modal for AI generation");
-            }
-          }
-        }}
-      />
+              } else {
+                if (apiClient) {
+                  setShowPromptModal(true);
+                } else {
+                  alert("Demo Mode: Would open prompt modal for AI generation");
+                }
+              }
+            }}
+          />
+      </main>
 
       {/* Hidden file inputs */}
       <input
@@ -844,24 +1147,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         }}
         title="Generate with AI"
         placeholder="Describe what you want to generate or edit..."
-      />
-
-      {/* Mask Prompt Modal */}
-      <MaskPromptBar
-        isActive={activeTool === "mask"}
-        maskStrokesCount={maskStrokes.length}
-        maskPrompt={maskPrompt}
-        setMaskPrompt={setMaskPrompt}
-        onSubmit={() => {
-          if (apiClient) {
-            handleGenerate(maskPrompt);
-          } else {
-            alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
-          }
-        }}
-        onClear={() => { clearMaskStrokes(); setMaskPrompt(""); }}
-        onCancel={() => { setActiveTool(null); setMaskPrompt(""); clearMaskStrokes(); }}
-        isApiAvailable={!!apiClient}
       />
       
       <GeneratedImageModal
