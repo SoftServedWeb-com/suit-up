@@ -1,10 +1,9 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut } from "lucide-react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, Sparkle } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
-import { DrawingToolbar, PropertiesPanel } from "./toolbars";
 import { TextInputModal, PromptInputModal, GeneratedImageModal } from "./modals";
 import {
   loadImage,
@@ -12,17 +11,16 @@ import {
   canvasToDataURL,
 } from "./utils";
 import WelcomeStartModal from "./WelcomeStartModal";
-import GeneratedGallery from "./GeneratedGallery";
 import MaskPromptBar from "./MaskPromptBar";
 import MainActionsToolbar from "./MainActionsToolbar";
 import Header from "@/components/page/header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import FashionQuote from "@/components/fashion-quote";
 
 import type { AnnotationConfig, GenerationRequest } from "./annotation-types";
+import { toast } from "sonner";
 
 interface AnnotationEditorProps {
   apiClient?: any;
@@ -87,10 +85,21 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [cursorStyle, setCursorStyle] = useState<string>("default");
 
   const addToGallery = (dataUrl: string) => {
     setGallery((prev) => {
       const next = [dataUrl, ...prev].slice(0, 24);
+      try {
+        window.localStorage.setItem("canvas_generated_gallery", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const removeFromGallery = (index: number) => {
+    setGallery((prev) => {
+      const next = prev.filter((_, i) => i !== index);
       try {
         window.localStorage.setItem("canvas_generated_gallery", JSON.stringify(next));
       } catch {}
@@ -146,6 +155,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     startPos,
     currentMousePos,
     setActiveTool,
+    setSelectedAnnotationId,
     startDrawing,
     continueDrawing,
     endDrawing,
@@ -345,6 +355,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
 
+      // Click on empty canvas - deselect
+      setSelectedAnnotationId(null);
+
       if (
         activeTool === "draw" ||
         activeTool === "arrow" ||
@@ -357,6 +370,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       activeTool,
       annotations,
       selectedAnnotationId,
+      setSelectedAnnotationId,
       startDragging,
       startDrawing,
       stopDragging,
@@ -381,8 +395,80 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         continueDrawing(point);
         return;
       }
+
+      // Update cursor based on what's under the mouse
+      if (!activeTool || activeTool === null) {
+        const handleSize = 12;
+        const handleTolerance = 6;
+        let newCursor = "default";
+
+        // Check for image resize handles
+        for (let i = annotations.length - 1; i >= 0; i--) {
+          const ann = annotations[i];
+          if (ann.type === "image" && ann.id === selectedAnnotationId) {
+            const imgAnn = ann as any;
+
+            // Top-left handle
+            if (
+              Math.abs(point.x - imgAnn.x) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - imgAnn.y) <= handleSize / 2 + handleTolerance
+            ) {
+              newCursor = "nwse-resize";
+              break;
+            }
+
+            // Top-right handle
+            if (
+              Math.abs(point.x - (imgAnn.x + imgAnn.width)) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - imgAnn.y) <= handleSize / 2 + handleTolerance
+            ) {
+              newCursor = "nesw-resize";
+              break;
+            }
+
+            // Bottom-left handle
+            if (
+              Math.abs(point.x - imgAnn.x) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - (imgAnn.y + imgAnn.height)) <= handleSize / 2 + handleTolerance
+            ) {
+              newCursor = "nesw-resize";
+              break;
+            }
+
+            // Bottom-right handle
+            if (
+              Math.abs(point.x - (imgAnn.x + imgAnn.width)) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - (imgAnn.y + imgAnn.height)) <= handleSize / 2 + handleTolerance
+            ) {
+              newCursor = "nwse-resize";
+              break;
+            }
+
+            // Inside image - move cursor
+            if (
+              point.x >= imgAnn.x &&
+              point.x <= imgAnn.x + imgAnn.width &&
+              point.y >= imgAnn.y &&
+              point.y <= imgAnn.y + imgAnn.height
+            ) {
+              newCursor = "move";
+              break;
+            }
+          }
+        }
+
+        setCursorStyle(newCursor);
+      } else if (activeTool === "image") {
+        setCursorStyle("crosshair");
+      } else if (activeTool === "text") {
+        setCursorStyle("text");
+      } else if (activeTool === "draw" || activeTool === "mask") {
+        setCursorStyle("crosshair");
+      } else if (activeTool === "arrow") {
+        setCursorStyle("crosshair");
+      }
     },
-    [isDrawing, isDragging, continueDrawing, continueDragging, zoomLevel]
+    [isDrawing, isDragging, continueDrawing, continueDragging, zoomLevel, annotations, selectedAnnotationId, activeTool]
   );
 
   const handleMouseUp = useCallback(
@@ -731,11 +817,12 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 >
                   {image ? (
                     <div 
-                      className="flex items-center justify-center p-6"
+                      className="flex items-center justify-center p-6 relative"
                       style={{
                         transform: `scale(${zoomLevel})`,
                         transformOrigin: 'center center',
                         transition: 'transform 0.1s ease-out',
+                        cursor: cursorStyle,
                       }}
                     >
                       <AnnotationCanvas
@@ -758,6 +845,13 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       onMouseUp={handleMouseUp}
                       className="max-w-full max-h-full object-contain "
                     />
+                    
+                    {/* Image Tool Helper Tooltip */}
+                    {activeTool === "image" && (
+                      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm font-medium animate-in fade-in-0 slide-in-from-top-2 z-50">
+                        📸 Click anywhere on the canvas to upload an image
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center text-muted-foreground py-32">
@@ -885,8 +979,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                 disabled={isGenerating || activeTool === "mask"}
                                 className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <MessageSquare className="h-8 w-8" />
-                                <span className="text-xs">Prompt</span>
+                                <Sparkle className="h-8 w-8 text-primary" />
+                                <span className="text-md text-primary">Idealize</span>
                               </Button>
                             </div>
 
@@ -940,7 +1034,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                         </Card>
                       </div>
                     ) : (
-                      <div className="absolute top-4 left-4 z-10">
+                      <div className="absolute top-4 left-4 z-10 ">
                         <Button
                           variant="default"
                           size="sm"
@@ -960,25 +1054,17 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 {gallery.length > 0 && (
                   <>
                     {isGalleryOpen ? (
-                      <div className="absolute top-4 right-4 w-48 max-h-[calc(100%-2rem)] overflow-hidden z-10">
+                      <div className="absolute top-4 right-4 w-64 max-h-[calc(100%-2rem)] overflow-hidden z-10">
                         <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
-                          <CardHeader className="pb-2 px-3 py-2">
+                          <CardHeader className="">
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-xs font-medium">Generated ({gallery.length})</CardTitle>
+                              <CardTitle className="text-sm font-semibold">Studio Gallery ({gallery.length})</CardTitle>
                               <div className="flex items-center gap-1">
+                               
                                 <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
-                                  onClick={() => setIsGalleryOpen(false)}
-                                  title="Collapse gallery"
-                                >
-                                  ›
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                  variant="destructive" 
+                                    size="sm"
+                                    className="h-fit w-fit aspect-square text-muted-foreground hover:text-foreground"
                                   onClick={() => { 
                                     setGallery([]); 
                                     try { 
@@ -987,21 +1073,42 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }}
                                   title="Clear all"
                                 >
-                                  ×
+                                  <Trash2 className="h-8 w-8 text-white" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="h-fit w-fit aspect-square text-muted-foreground hover:text-foreground"
+                                  onClick={() => setIsGalleryOpen(false)}
+                                  title="Collapse gallery"
+                                >
+                                  <ChevronUp className="h-8 w-8" />
                                 </Button>
                               </div>
                             </div>
                           </CardHeader>
                           <CardContent className="p-2 space-y-2 max-h-[calc(100vh-500px)] overflow-y-auto">
                             {gallery.map((url, idx) => (
-                              <div key={idx} className="border border-border rounded-md overflow-hidden bg-card hover:shadow-md transition-shadow">
+                              <div key={idx} className="relative border border-border rounded-md overflow-hidden bg-card hover:shadow-md transition-shadow group">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={url} alt={`Generated ${idx+1}`} className="w-full aspect-square object-cover" />
+                                
+                                {/* Delete button overlay */}
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                  onClick={() => removeFromGallery(idx)}
+                                  title="Delete image"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+
                                 <div className="p-1.5 flex gap-1.5">
                                   <Button
                                     variant="outline"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs flex-1"
+                                    // size="sm"
+                                    className="text-md flex-1"
                                     onClick={async () => {
                                       try {
                                         const img = await loadImage(url);
@@ -1022,8 +1129,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   </Button>
                                   <Button
                                     variant="outline"
-                                    size="sm"
-                                    className="h-6 px-2 text-xs flex-1"
+                                    className="text-md flex-1"
                                     onClick={() => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
                                   >
                                     View
@@ -1051,12 +1157,49 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                   </>
                 )}
 
-                {/* Floating Zoom Controls - Bottom Center */}
+                {/* Floating Zoom & Edit Controls - Bottom Center */}
                 {image && (
                   <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
                     <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
                       <CardContent className="">
                         <div className="flex items-center gap-2">
+                          {/* Undo/Redo/Clear Section */}
+                          <Button
+                            onClick={undo}
+                            disabled={!canUndo || isGenerating}
+                            variant="ghost"
+                            size="sm"
+                            title="Undo (Ctrl+Z)"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Undo className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            onClick={redo}
+                            disabled={!canRedo || isGenerating}
+                            variant="ghost"
+                            size="sm"
+                            title="Redo (Ctrl+Y)"
+                            className="h-8 w-8 p-0"
+                          >
+                            <Redo className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            onClick={clearAll}
+                            disabled={isGenerating}
+                            variant="ghost"
+                            size="sm"
+                            title="Clear All"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+
+                          <div className="w-px h-6 bg-border mx-1" />
+
+                          {/* Zoom Section */}
                           <Button
                             onClick={handleZoomOut}
                             disabled={isGenerating || zoomLevel <= 0.25}
@@ -1068,18 +1211,16 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                             <ZoomOut className="h-4 w-4" />
                           </Button>
                           
-                          <div className="flex items-center gap-2 border-x border-border">
-                            <Button
-                              onClick={handleZoomReset}
-                              disabled={isGenerating || zoomLevel === 1.0}
-                              variant="ghost"
-                              size="sm"
-                              title="Reset Zoom"
-                              className="h-8 min-w-[70px] text-sm font-medium"
-                            >
-                              {Math.round(zoomLevel * 100)}%
-                            </Button>
-                          </div>
+                          <Button
+                            onClick={handleZoomReset}
+                            disabled={isGenerating || zoomLevel === 1.0}
+                            variant="ghost"
+                            size="sm"
+                            title="Reset Zoom"
+                            className="h-8 min-w-[70px] text-sm font-medium"
+                          >
+                            {Math.round(zoomLevel * 100)}%
+                          </Button>
                           
                           <Button
                             onClick={handleZoomIn}
@@ -1111,7 +1252,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
               if (apiClient) {
                 handleGenerate(maskPrompt);
               } else {
-                alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
+                toast.error(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
               }
             }}
             onClear={() => { clearMaskStrokes(); setMaskPrompt(""); }}
@@ -1122,8 +1263,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           {/* Actions Bar */}
           <MainActionsToolbar
             isVisible={!!image}
-            canUndo={canUndo}
-            canRedo={canRedo}
             isGenerating={isGenerating}
             isImageLoaded={!!image}
             isMaskActive={activeTool === "mask"}
@@ -1137,9 +1276,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 clearAll();
               }
             }}
-            onUndo={undo}
-            onRedo={redo}
-            onClear={clearAll}
             onDownload={handleDownload}
             onGenerate={() => {
               if (
@@ -1150,13 +1286,13 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 if (apiClient) {
                   handleGenerate(maskPrompt);
                 } else {
-                  alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
+                  toast.error(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
                 }
               } else {
                 if (apiClient) {
                   setShowPromptModal(true);
                 } else {
-                  alert("Demo Mode: Would open prompt modal for AI generation");
+                  toast.error("Demo Mode: Would open prompt modal for AI generation");
                 }
               }
             }}
@@ -1222,7 +1358,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             materialFileRef.current = materialFile || null;
             handleGenerate(prompt);
           } else {
-            alert(`Demo Mode: Would generate with prompt: "${prompt}"`);
+            toast.error(`Demo Mode: Would generate with prompt: "${prompt}"`);
             setShowPromptModal(false);
             setActiveTool(null);
           }

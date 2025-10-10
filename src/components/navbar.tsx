@@ -11,7 +11,7 @@ export default function Navbar({ userId }: { userId: boolean }) {
       <div className="bg-white/95 backdrop-blur-sm border border-gray-100 rounded-full px-8 py-4 transition-all duration-500 hover:shadow-md">
         <div className="flex h-fit items-center justify-between">
           {/* Minimal logo */}
-          <div className="w-24 h-24 items-center object-contain flex ">
+          <div className="w-24 h-fit items-center object-contain flex ">
             <TrialRoomLogowithText/>
           </div>
           {/* Minimal CTA */}

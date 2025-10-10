@@ -111,8 +111,8 @@ export const TrialRoomLogowithText: React.FC<{ className?: string }> = ({
 }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    width="1281"
-    height="343"
+    // width="1281"
+    // height="343"
     viewBox="0 0 1281 343"
     fill="none"
     className={className}

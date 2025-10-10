@@ -208,6 +208,43 @@ export const useCanvas = ({
         );
         ctx.restore();
         ctx.globalAlpha = 1;
+        
+        // Draw selection border and resize handles for selected images
+        if (isSelected) {
+          ctx.strokeStyle = "#3b82f6";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(annotation.x, annotation.y, annotation.width, annotation.height);
+          
+          // Draw resize handles at corners
+          const handleSize = 12;
+          ctx.fillStyle = "#3b82f6";
+          
+          const corners = [
+            { x: annotation.x, y: annotation.y }, // Top-left
+            { x: annotation.x + annotation.width, y: annotation.y }, // Top-right
+            { x: annotation.x, y: annotation.y + annotation.height }, // Bottom-left
+            { x: annotation.x + annotation.width, y: annotation.y + annotation.height }, // Bottom-right
+          ];
+          
+          corners.forEach((corner) => {
+            ctx.fillRect(
+              corner.x - handleSize / 2,
+              corner.y - handleSize / 2,
+              handleSize,
+              handleSize
+            );
+            
+            // White border for handles
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+              corner.x - handleSize / 2,
+              corner.y - handleSize / 2,
+              handleSize,
+              handleSize
+            );
+          });
+        }
       }
     });
 

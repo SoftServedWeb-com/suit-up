@@ -40,9 +40,10 @@ export const useAnnotations = ({
   // Dragging states
   const [isDragging, setIsDragging] = useState(false);
   const [dragType, setDragType] = useState<
-    "annotation" | "arrow-start" | "arrow-end" | null
+    "annotation" | "arrow-start" | "arrow-end" | "image-resize-tl" | "image-resize-tr" | "image-resize-bl" | "image-resize-br" | null
   >(null);
   const [dragOffset, setDragOffset] = useState<Point>({ x: 0, y: 0 });
+  const [initialImageDimensions, setInitialImageDimensions] = useState<{ width: number; height: number; x: number; y: number }>({ width: 0, height: 0, x: 0, y: 0 });
 
   // Refs for drawing state
   const startPos = useRef<Point>({ x: 0, y: 0 });
@@ -316,27 +317,66 @@ export const useAnnotations = ({
     []
   );
 
-  // Check if point is inside image annotation
+  // Check if point is inside image annotation or on resize handles
   const getClickedImageAnnotation = useCallback(
     (point: Point, imageAnnotations: Annotation[]) => {
+      const handleSize = 12; // Size of resize handles
+      const handleTolerance = 6; // Extra pixels for easier clicking
+
       for (let i = imageAnnotations.length - 1; i >= 0; i--) {
         const ann = imageAnnotations[i];
         if (ann.type === "image") {
           const imgAnn = ann as ImageAnnotation;
 
+          // Check resize handles for selected images
+          if (ann.id === selectedAnnotationId) {
+            // Top-left handle
+            if (
+              Math.abs(point.x - imgAnn.x) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - imgAnn.y) <= handleSize / 2 + handleTolerance
+            ) {
+              return { annotation: imgAnn, index: i, dragType: "image-resize-tl" as const };
+            }
+
+            // Top-right handle
+            if (
+              Math.abs(point.x - (imgAnn.x + imgAnn.width)) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - imgAnn.y) <= handleSize / 2 + handleTolerance
+            ) {
+              return { annotation: imgAnn, index: i, dragType: "image-resize-tr" as const };
+            }
+
+            // Bottom-left handle
+            if (
+              Math.abs(point.x - imgAnn.x) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - (imgAnn.y + imgAnn.height)) <= handleSize / 2 + handleTolerance
+            ) {
+              return { annotation: imgAnn, index: i, dragType: "image-resize-bl" as const };
+            }
+
+            // Bottom-right handle
+            if (
+              Math.abs(point.x - (imgAnn.x + imgAnn.width)) <= handleSize / 2 + handleTolerance &&
+              Math.abs(point.y - (imgAnn.y + imgAnn.height)) <= handleSize / 2 + handleTolerance
+            ) {
+              return { annotation: imgAnn, index: i, dragType: "image-resize-br" as const };
+            }
+          }
+
+          // Check if point is inside image (for moving)
           if (
             point.x >= imgAnn.x &&
             point.x <= imgAnn.x + imgAnn.width &&
             point.y >= imgAnn.y &&
             point.y <= imgAnn.y + imgAnn.height
           ) {
-            return { annotation: imgAnn, index: i };
+            return { annotation: imgAnn, index: i, dragType: "annotation" as const };
           }
         }
       }
       return null;
     },
-    []
+    [selectedAnnotationId]
   );
 
   // Helper function for line distance calculation
@@ -413,11 +453,24 @@ export const useAnnotations = ({
       if (imageResult) {
         setSelectedAnnotationId(imageResult.annotation.id);
         setIsDragging(true);
-        setDragType("annotation");
-        setDragOffset({
-          x: point.x - imageResult.annotation.x,
-          y: point.y - imageResult.annotation.y,
-        });
+        setDragType(imageResult.dragType);
+        
+        if (imageResult.dragType === "annotation") {
+          // Moving the image
+          setDragOffset({
+            x: point.x - imageResult.annotation.x,
+            y: point.y - imageResult.annotation.y,
+          });
+        } else {
+          // Resizing the image - store initial dimensions
+          setInitialImageDimensions({
+            width: imageResult.annotation.width,
+            height: imageResult.annotation.height,
+            x: imageResult.annotation.x,
+            y: imageResult.annotation.y,
+          });
+          setDragOffset({ x: point.x, y: point.y }); // Store initial click position
+        }
         return true;
       }
 
@@ -476,6 +529,54 @@ export const useAnnotations = ({
             };
           }
         } else if (ann.type === "image") {
+          const imgAnn = ann as ImageAnnotation;
+          
+          // Handle resizing
+          if (dragType?.startsWith("image-resize-")) {
+            const minSize = 20; // Minimum image size
+            let newX = imgAnn.x;
+            let newY = imgAnn.y;
+            let newWidth = imgAnn.width;
+            let newHeight = imgAnn.height;
+            
+            const deltaX = point.x - dragOffset.x;
+            const deltaY = point.y - dragOffset.y;
+            
+            // Maintain aspect ratio
+            const aspectRatio = initialImageDimensions.width / initialImageDimensions.height;
+            
+            if (dragType === "image-resize-tl") {
+              // Top-left: resize from top-left corner
+              newWidth = Math.max(minSize, initialImageDimensions.width - deltaX);
+              newHeight = newWidth / aspectRatio;
+              newX = initialImageDimensions.x + initialImageDimensions.width - newWidth;
+              newY = initialImageDimensions.y + initialImageDimensions.height - newHeight;
+            } else if (dragType === "image-resize-tr") {
+              // Top-right: resize from top-right corner
+              newWidth = Math.max(minSize, initialImageDimensions.width + deltaX);
+              newHeight = newWidth / aspectRatio;
+              newY = initialImageDimensions.y + initialImageDimensions.height - newHeight;
+            } else if (dragType === "image-resize-bl") {
+              // Bottom-left: resize from bottom-left corner
+              newWidth = Math.max(minSize, initialImageDimensions.width - deltaX);
+              newHeight = newWidth / aspectRatio;
+              newX = initialImageDimensions.x + initialImageDimensions.width - newWidth;
+            } else if (dragType === "image-resize-br") {
+              // Bottom-right: resize from bottom-right corner
+              newWidth = Math.max(minSize, initialImageDimensions.width + deltaX);
+              newHeight = newWidth / aspectRatio;
+            }
+            
+            return {
+              ...imgAnn,
+              x: newX,
+              y: newY,
+              width: newWidth,
+              height: newHeight,
+            };
+          }
+          
+          // Handle moving
           return {
             ...ann,
             x: point.x - dragOffset.x,
@@ -488,7 +589,7 @@ export const useAnnotations = ({
 
       setAnnotations(newAnnotations);
     },
-    [isDragging, selectedAnnotationId, annotations, dragOffset, dragType]
+    [isDragging, selectedAnnotationId, annotations, dragOffset, dragType, initialImageDimensions]
   );
 
   // Stop dragging

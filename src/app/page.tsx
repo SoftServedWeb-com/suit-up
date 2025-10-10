@@ -1,5 +1,3 @@
-import { AuroraBackground } from "@/components/aurora-bg";
-import Footer from "@/components/footer";
 import Home2 from "@/components/landing/home";
 export default async function Page() {
   
