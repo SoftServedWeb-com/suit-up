@@ -1,7 +1,7 @@
 'use client'
 
 import React from "react";
-import { Upload, Square, Undo, Redo, Trash2, Download, Sparkles, Loader2 } from "lucide-react";
+import { Upload, Square, Undo, Redo, Trash2, Download, Sparkles, Loader2, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -14,6 +14,7 @@ interface MainActionsToolbarProps {
   isMaskActive: boolean;
   hasMaskSelection: boolean;
   maskPrompt: string;
+  zoomLevel?: number;
   onClickUpload: () => void;
   onClickNew: () => void;
   onUndo: () => void;
@@ -21,6 +22,9 @@ interface MainActionsToolbarProps {
   onClear: () => void;
   onDownload: () => void;
   onGenerate: () => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
 }
 
 export const MainActionsToolbar: React.FC<MainActionsToolbarProps> = ({
@@ -32,6 +36,7 @@ export const MainActionsToolbar: React.FC<MainActionsToolbarProps> = ({
   isMaskActive,
   hasMaskSelection,
   maskPrompt,
+  zoomLevel = 1.0,
   onClickUpload,
   onClickNew,
   onUndo,
@@ -39,6 +44,9 @@ export const MainActionsToolbar: React.FC<MainActionsToolbarProps> = ({
   onClear,
   onDownload,
   onGenerate,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }) => {
   if (!isVisible) return null;
 
@@ -103,6 +111,40 @@ export const MainActionsToolbar: React.FC<MainActionsToolbarProps> = ({
           >
             <Download className="h-4 w-4" />
           </Button>
+
+          {/* Zoom Controls */}
+          {onZoomIn && onZoomOut && onZoomReset && (
+            <div className="flex items-center gap-2 border-l border-border pl-3">
+              <Button
+                onClick={onZoomOut}
+                disabled={isGenerating || zoomLevel <= 0.25}
+                variant="ghost"
+                size="sm"
+                title="Zoom Out"
+              >
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={onZoomReset}
+                disabled={isGenerating || zoomLevel === 1.0}
+                variant="ghost"
+                size="sm"
+                title="Reset Zoom (100%)"
+                className="min-w-[60px]"
+              >
+                <span className="text-xs">{Math.round(zoomLevel * 100)}%</span>
+              </Button>
+              <Button
+                onClick={onZoomIn}
+                disabled={isGenerating || zoomLevel >= 3.0}
+                variant="ghost"
+                size="sm"
+                title="Zoom In"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           <Button
             onClick={onGenerate}

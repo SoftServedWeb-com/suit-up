@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { DrawingToolbar, PropertiesPanel } from "./toolbars";
@@ -84,8 +84,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       return [];
     }
   });
-  const [isGalleryOpen, setIsGalleryOpen] = useState(true);
-  const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(true);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
 
   const addToGallery = (dataUrl: string) => {
     setGallery((prev) => {
@@ -96,6 +97,27 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       return next;
     });
   };
+
+  // Zoom handlers
+  const handleZoomIn = useCallback(() => {
+    setZoomLevel((prev) => Math.min(prev + 0.25, 3.0));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    setZoomLevel((prev) => Math.max(prev - 0.25, 0.25));
+  }, []);
+
+  const handleZoomReset = useCallback(() => {
+    setZoomLevel(1.0);
+  }, []);
+
+  const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      const delta = -event.deltaY * 0.001;
+      setZoomLevel((prev) => Math.max(0.25, Math.min(3.0, prev + delta)));
+    }
+  }, []);
 
   // Modals
   const [showTextModal, setShowTextModal] = useState(false);
@@ -287,8 +309,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+      const x = (event.clientX - rect.left) * (canvas.width / rect.width) / zoomLevel;
+      const y = (event.clientY - rect.top) * (canvas.height / rect.height) / zoomLevel;
       const point = { x, y, timestamp: Date.now() };
 
       if (activeTool === "text") {
@@ -338,6 +360,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       startDragging,
       startDrawing,
       stopDragging,
+      zoomLevel,
     ]
   );
 
@@ -345,8 +368,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+      const x = (event.clientX - rect.left) * (canvas.width / rect.width) / zoomLevel;
+      const y = (event.clientY - rect.top) * (canvas.height / rect.height) / zoomLevel;
       const point = { x, y, timestamp: Date.now() };
 
       if (isDragging) {
@@ -359,15 +382,15 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
     },
-    [isDrawing, isDragging, continueDrawing, continueDragging]
+    [isDrawing, isDragging, continueDrawing, continueDragging, zoomLevel]
   );
 
   const handleMouseUp = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = event.currentTarget;
       const rect = canvas.getBoundingClientRect();
-      const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-      const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+      const x = (event.clientX - rect.left) * (canvas.width / rect.width) / zoomLevel;
+      const y = (event.clientY - rect.top) * (canvas.height / rect.height) / zoomLevel;
       const point = { x, y, timestamp: Date.now() };
 
       if (isDragging) {
@@ -390,7 +413,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
     },
-    [isDrawing, isDragging, activeTool, colors, sizes, endDrawing, stopDragging]
+    [isDrawing, isDragging, activeTool, colors, sizes, endDrawing, stopDragging, zoomLevel]
   );
 
   // Handle text submission
@@ -639,43 +662,44 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             Explore AI-powered creative tools for virtual try-on and image transformation.
           </p>
           
-          <div className="flex gap-3 text-sm">
-            <Link href="/dashboard">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 px-3 text-muted-foreground hover:text-foreground"
-              >
-                <Home className="h-3 w-3 mr-2" />
-                Try-On Studio
-              </Button>
-            </Link>
-            
-            <Link href="/prompt-studio">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 px-3 text-muted-foreground hover:text-foreground"
-              >
-                <Sparkles className="h-3 w-3 mr-2" />
-                Prompt Studio
-              </Button>
-            </Link>
-            
-            <div className="relative">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 px-3 text-primary hover:text-primary/90 bg-primary/5"
-              >
-                <Palette className="h-3 w-3 mr-2" />
-                Canvas Studio
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  Active
-                </Badge>
-              </Button>
+          {/* <div className="flex gap-3 text-sm"> */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-muted-foreground hover:text-foreground flex items-center justify-start sm:justify-center"
+                >
+                  <Home className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
+                  <span className="truncate">Try-On Studio</span>
+                </Button>
+              </Link>
+              
+              <Link href="/prompt-studio" className="w-full sm:w-auto">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-muted-foreground hover:text-foreground flex items-center justify-start sm:justify-center"
+                >
+                  <Sparkles className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
+                  <span className="truncate">Prompt Studio</span>
+                </Button>
+              </Link>
+              
+              <div className="relative w-full sm:w-auto">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-primary hover:text-primary/90 bg-primary/5 flex items-center justify-start sm:justify-center"
+                >
+                  <Palette className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
+                  <span className="truncate">Canvas Studio</span>
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    Active
+                  </Badge>
+                </Button>
+              </div>
             </div>
-          </div>
         </div>
         
         {/* Main Canvas Section */}
@@ -700,10 +724,21 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           {/* Full-Screen Canvas Card */}
           <Card className="border-ring bg-background">
             <CardContent className="p-0">
-              <div className="relative flex items-center justify-center min-h-[calc(100vh-400px)] bg-gradient-to-br from-slate-50 to-slate-100">
-                {image ? (
-                  <div className="relative w-full h-full flex items-center justify-center p-6">
-                    <AnnotationCanvas
+              <div className="relative h-[85vh]">
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto"
+                  onWheel={handleWheel}
+                >
+                  {image ? (
+                    <div 
+                      className="flex items-center justify-center p-6"
+                      style={{
+                        transform: `scale(${zoomLevel})`,
+                        transformOrigin: 'center center',
+                        transition: 'transform 0.1s ease-out',
+                      }}
+                    >
+                      <AnnotationCanvas
                       dimensions={dimensions}
                       annotations={annotations}
                       maskStrokes={maskStrokes}
@@ -721,7 +756,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       onMouseDown={handleMouseDown}
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
-                      className="max-w-full max-h-full object-contain shadow-xl rounded-lg"
+                      className="max-w-full max-h-full object-contain "
                     />
                   </div>
                 ) : (
@@ -731,30 +766,31 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                     <p className="text-sm mt-2 opacity-70">Get started by uploading an image or creating a blank canvas</p>
                   </div>
                 )}
+              </div>
 
-                {/* Drawing Tools & Properties Overlay - Left Side */}
-                {image && (
-                  <>
-                    {isToolsPanelOpen ? (
-                      <div className="absolute top-4 left-4 w-64 max-h-[calc(100%-2rem)] overflow-hidden">
-                        <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
-                          <CardHeader className="pb-2 px-3 py-2">
+              {/* Drawing Tools & Properties Overlay - Left Side */}
+              {image && (
+                <>
+                  {isToolsPanelOpen ? (
+                    <div className="absolute top-4 left-4 w-64 max-h-[calc(100%-2rem)]overflow-hidden z-10">
+                      <Card className="border-border bg-white/95 backdrop-blur-sm  shadow-xl ">
+                          <CardHeader className="px-3">
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-xs font-medium">Drawing Tools</CardTitle>
+                              <CardTitle className="text-lg font-medium">Drawing Tools</CardTitle>
                               <Button 
-                                variant="ghost" 
+                                variant="outline" 
                                 size="sm"
-                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                className="h-fit w-fit aspect-square text-muted-foreground hover:text-foreground"
                                 onClick={() => setIsToolsPanelOpen(false)}
                                 title="Collapse tools"
                               >
-                                ‹
+                                <ChevronUp className="h-8 w-8" />
                               </Button>
                             </div>
                           </CardHeader>
-                          <CardContent className="p-3 space-y-3 max-h-[calc(100vh-500px)] overflow-y-auto">
+                          <CardContent className="p-3 max-h-[calc(100vh-500px)] overflow-y-auto">
                             {/* Tools Grid */}
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                               <Button
                                 variant={activeTool === "draw" ? "default" : "outline"}
                                 size="sm"
@@ -766,10 +802,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <Pen className="h-4 w-4" />
-                                <span className="text-[10px]">Draw</span>
+                                <Pen className="h-8 w-8" />
+                                <span className="text-xs">Draw</span>
                               </Button>
                               <Button
                                 variant={activeTool === "arrow" ? "default" : "outline"}
@@ -782,10 +818,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <ArrowRight className="h-4 w-4" />
-                                <span className="text-[10px]">Arrow</span>
+                                <ArrowRight className="h-8 w-8" />
+                                <span className="text-xs">Arrow</span>
                               </Button>
                               <Button
                                 variant={activeTool === "text" ? "default" : "outline"}
@@ -798,10 +834,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <Type className="h-4 w-4" />
-                                <span className="text-[10px]">Text</span>
+                                <Type className="h-8 w-8" />
+                                <span className="text-xs tracking-tighter">Text</span>
                               </Button>
                               <Button
                                 variant={activeTool === "image" ? "default" : "outline"}
@@ -814,10 +850,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-full aspect-square flex flex-col items-center"
                               >
-                                <Image className="h-4 w-4" />
-                                <span className="text-[10px]">Image</span>
+                                <Image className="h-8 w-8" />
+                                <span className="text-xs">Image</span>
                               </Button>
                               <Button
                                 variant={activeTool === "mask" ? "default" : "outline"}
@@ -831,10 +867,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <Lasso className="h-4 w-4" />
-                                <span className="text-[10px]">Mask</span>
+                                <Lasso className="h-8 w-8" />
+                                <span className="text-xs">Mask</span>
                               </Button>
                               <Button
                                 variant={activeTool === "prompt" ? "default" : "outline"}
@@ -847,10 +883,10 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   }
                                 }}
                                 disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto py-2 flex flex-col items-center gap-1"
+                                className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <MessageSquare className="h-4 w-4" />
-                                <span className="text-[10px]">Prompt</span>
+                                <MessageSquare className="h-8 w-8" />
+                                <span className="text-xs">Prompt</span>
                               </Button>
                             </div>
 
@@ -904,7 +940,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                         </Card>
                       </div>
                     ) : (
-                      <div className="absolute top-4 left-4">
+                      <div className="absolute top-4 left-4 z-10">
                         <Button
                           variant="default"
                           size="sm"
@@ -924,7 +960,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                 {gallery.length > 0 && (
                   <>
                     {isGalleryOpen ? (
-                      <div className="absolute top-4 right-4 w-48 max-h-[calc(100%-2rem)] overflow-hidden">
+                      <div className="absolute top-4 right-4 w-48 max-h-[calc(100%-2rem)] overflow-hidden z-10">
                         <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
                           <CardHeader className="pb-2 px-3 py-2">
                             <div className="flex items-center justify-between">
@@ -965,7 +1001,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 px-2 text-[10px] flex-1"
+                                    className="h-6 px-2 text-xs flex-1"
                                     onClick={async () => {
                                       try {
                                         const img = await loadImage(url);
@@ -987,7 +1023,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-6 px-2 text-[10px] flex-1"
+                                    className="h-6 px-2 text-xs flex-1"
                                     onClick={() => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
                                   >
                                     View
@@ -999,7 +1035,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                         </Card>
                       </div>
                     ) : (
-                      <div className="absolute top-4 right-4">
+                      <div className="absolute top-4 right-4 z-10">
                         <Button
                           variant="default"
                           size="sm"
@@ -1013,6 +1049,52 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Floating Zoom Controls - Bottom Center */}
+                {image && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                    <Card className="border-border bg-white/95 backdrop-blur-sm shadow-xl">
+                      <CardContent className="">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={handleZoomOut}
+                            disabled={isGenerating || zoomLevel <= 0.25}
+                            variant="ghost"
+                            size="sm"
+                            title="Zoom Out (Ctrl + Scroll)"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ZoomOut className="h-4 w-4" />
+                          </Button>
+                          
+                          <div className="flex items-center gap-2 border-x border-border">
+                            <Button
+                              onClick={handleZoomReset}
+                              disabled={isGenerating || zoomLevel === 1.0}
+                              variant="ghost"
+                              size="sm"
+                              title="Reset Zoom"
+                              className="h-8 min-w-[70px] text-sm font-medium"
+                            >
+                              {Math.round(zoomLevel * 100)}%
+                            </Button>
+                          </div>
+                          
+                          <Button
+                            onClick={handleZoomIn}
+                            disabled={isGenerating || zoomLevel >= 3.0}
+                            variant="ghost"
+                            size="sm"
+                            title="Zoom In (Ctrl + Scroll)"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ZoomIn className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 )}
               </div>
             </CardContent>
