@@ -1,17 +1,20 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Upload, Undo, Redo, Trash2, Download, Zap, Lasso, Square, X } from "lucide-react";
+import { Square, Home } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { DrawingToolbar, PropertiesPanel } from "./toolbars";
 import { TextInputModal, PromptInputModal, GeneratedImageModal } from "./modals";
-import { Button } from "@/components/ui/button";
 import {
   loadImage,
   calculateCanvasDimensions,
   canvasToDataURL,
 } from "./utils";
+import WelcomeStartModal from "./WelcomeStartModal";
+import GeneratedGallery from "./GeneratedGallery";
+import MaskPromptBar from "./MaskPromptBar";
+import MainActionsToolbar from "./MainActionsToolbar";
 
 import type { AnnotationConfig, GenerationRequest } from "./annotation-types";
 
@@ -37,8 +40,8 @@ const defaultConfig: AnnotationConfig = {
     brushSize: 30,
   },
   canvas: {
-    maxWidth: 1200,
-    maxHeight: 800,
+    maxWidth: 1400,
+    maxHeight: 1800,
     backgroundColor: "#ffffff",
   },
 };
@@ -128,12 +131,23 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     redo,
   } = useAnnotations();
 
+  // Calculate fullscreen dimensions (with padding for UI)
+  const getFullscreenDimensions = () => {
+    if (typeof window === 'undefined') return { width: 1400, height: 900 };
+    const padding = 200; // Leave space for toolbars and UI
+    return {
+      width: Math.min(window.innerWidth - padding, config.canvas.maxWidth),
+      height: Math.min(window.innerHeight - padding, config.canvas.maxHeight),
+    };
+  };
+
   // Preset sizes for blank canvas
   const presetSizes = [
     { name: 'Square (1:1)', width: 800, height: 800 },
     { name: 'Landscape (16:9)', width: 1200, height: 675 },
     { name: 'Portrait (9:16)', width: 675, height: 1200 },
     { name: 'Standard (4:3)', width: 800, height: 600 },
+    { name: 'Full Screen', width: getFullscreenDimensions().width, height: getFullscreenDimensions().height, isFullscreen: true },
   ];
 
   // Create blank canvas
@@ -175,23 +189,40 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
       try {
         const img = await loadImage(file);
-        const newDimensions = calculateCanvasDimensions(
-          img.width,
-          img.height,
-          config.canvas.maxWidth,
-          config.canvas.maxHeight
-        );
-
-        setImage(img);
-        setDimensions(newDimensions);
-        setShowStartOptions(false);
-        clearAll();
+        
+        // If no image is set as background, set this as background
+        if (!image) {
+          // Calculate optimal canvas dimensions with max constraints
+          // This keeps large images manageable while maintaining aspect ratio
+          const maxWidth = config.canvas.maxWidth;
+          const maxHeight = config.canvas.maxHeight;
+          const canvasDims = calculateCanvasDimensions(
+            img.width,
+            img.height,
+            maxWidth,
+            maxHeight
+          );
+          
+          console.log(`Original image: ${img.width}x${img.height}, Canvas: ${canvasDims.width}x${canvasDims.height}`);
+          
+          setImage(img);
+          // Use calculated dimensions directly to preserve aspect ratio
+          setDimensions(canvasDims);
+          setShowStartOptions(false);
+          clearAll();
+        } else {
+          // If there's already a background image, add this as an image annotation
+          // Position it at the center of the canvas
+          const x = (dimensions.width - img.width) / 2;
+          const y = (dimensions.height - img.height) / 2;
+          addImageAnnotation(x, y, img.width, img.height, img);
+        }
       } catch (error) {
         onError?.("Failed to load image");
         console.error("Failed to load image:", error);
       }
     },
-    [config.canvas, clearAll, onError]
+    [image, dimensions, addImageAnnotation, clearAll, onError, config.canvas.maxWidth, config.canvas.maxHeight]
   );
 
   // Handle custom canvas size
@@ -583,376 +614,169 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
     ]
   );
 
-  // Render start options if no image loaded
-  if (showStartOptions && !image) {
-    if (showSizeSelector) {
-      return (
-        <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
-          <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-            <h1 className="text-xl font-semibold text-gray-900">Choose Canvas Size</h1>
-            <button
-              onClick={() => setShowSizeSelector(false)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <X size={20} className="text-slate-600" />
-            </button>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center p-12">
-            <div className="w-full max-w-2xl space-y-6">
-              {/* Preset Sizes */}
-              <div className="grid grid-cols-2 gap-4">
-                {presetSizes.map((preset) => (
-                  <button
-                    key={preset.name}
-                    onClick={() => createBlankCanvas(preset.width, preset.height)}
-                    className="flex flex-col items-center justify-center p-6 border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
-                  >
-                    <Square size={32} className="text-slate-400 group-hover:text-blue-600 mb-2" />
-                    <span className="font-semibold text-slate-700 group-hover:text-blue-700">
-                      {preset.name}
-                    </span>
-                    <span className="text-sm text-slate-500 mt-1">
-                      {preset.width} × {preset.height}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Custom Size */}
-              <div className="p-6 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
-                <h3 className="font-semibold text-slate-700 mb-4">Custom Size</h3>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <label className="block text-sm text-slate-600 mb-2">Width (px)</label>
-                    <input
-                      type="number"
-                      value={customWidth}
-                      onChange={(e) => setCustomWidth(e.target.value)}
-                      min="100"
-                      max="2400"
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm text-slate-600 mb-2">Height (px)</label>
-                    <input
-                      type="number"
-                      value={customHeight}
-                      onChange={(e) => setCustomHeight(e.target.value)}
-                      min="100"
-                      max="2400"
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleCustomSize}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Create
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">Maximum size: 2400 × 2400 pixels</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
-        <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-gray-900">Annotation Editor</h1>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center p-12">
-          <div className="w-full max-w-4xl space-y-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">Get Started</h2>
-              <p className="text-slate-600">Choose how you want to begin</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Upload Image Option */}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-300 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 min-h-[280px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Upload size={40} className="text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Upload Image</h3>
-                  <p className="text-slate-600 text-center">
-                    Start with an existing image and add annotations
-                  </p>
-                </div>
-              </button>
-
-              {/* Blank Canvas Option */}
-              <button
-                onClick={() => setShowSizeSelector(true)}
-                className="group relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-slate-300 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all duration-300 min-h-[280px]"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Square size={40} className="text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Blank Canvas</h3>
-                  <p className="text-slate-600 text-center">
-                    Start from scratch with a blank canvas
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          className="hidden"
-        />
-      </div>
-    );
-  }
+  // Welcome modal moved to WelcomeStartModal component
 
   return (
-    <div className={`flex flex-col h-full bg-gray-50 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <h1 className="text-xl font-semibold text-gray-900">
-          Annotation Editor
-        </h1>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-64 p-4 bg-white border-r border-gray-200 space-y-4">
-          <DrawingToolbar
-            activeTool={activeTool}
-            onToolSelect={(tool) => {
-              if (tool === activeTool) {
-                setActiveTool(null);
-                if (tool === "mask") {
-                  setMaskPrompt("");
-                }
-              } else {
-                setActiveTool(tool);
-              }
-            }}
-            isMaskToolActive={activeTool === "mask"}
-            isGenerating={isGenerating}
-          />
-
-          <PropertiesPanel
-            activeTool={activeTool}
-            colors={colors}
-            sizes={sizes}
-            onColorChange={handleColorChange}
-            onSizeChange={handleSizeChange}
-          />
-        </div>
-
-        {/* Canvas Area + Right Gallery */}
-        <div className="flex-1 flex items-stretch p-8 min-h-0 bg-gradient-to-br from-slate-50 to-slate-100 gap-6">
-          <div className="flex-1 h-full flex items-center justify-center max-w-6xl mx-auto">
-            {image ? (
-              <div className="relative bg-white rounded-xl shadow-xl border border-slate-200 p-4 max-w-full max-h-full">
-                <AnnotationCanvas
-                  dimensions={dimensions}
-                  annotations={annotations}
-                  maskStrokes={maskStrokes}
-                  currentPath={currentPath}
-                  isDrawing={isDrawing}
-                  activeTool={activeTool}
-                  startPos={startPos}
-                  currentMousePos={currentMousePos}
-                  selectedAnnotationId={selectedAnnotationId}
-                  isDragging={isDragging}
-                  dragType={dragType}
-                  image={image}
-                  colors={colors}
-                  sizes={sizes}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  className="max-w-full max-h-full object-contain rounded-lg"
-                />
-              </div>
-            ) : null}
-          </div>
-          {/* Right Gallery */}
-          <div className="w-64 shrink-0 bg-white border border-slate-200 rounded-xl p-3 overflow-y-auto">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-slate-700">Generated</h3>
-              <button
-                className="text-xs text-slate-500 hover:text-slate-700"
-                onClick={() => {
-                  setGallery([]);
-                  try { window.localStorage.removeItem("canvas_generated_gallery"); } catch {}
-                }}
-              >
-                Clear
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-3">
-              {gallery.map((url, idx) => (
-                <div key={idx} className="border rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Gen ${idx+1}`} className="w-full aspect-square object-cover" />
-                  <div className="p-2 flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="h-8 px-2 text-xs"
-                      onClick={async () => {
-                        try {
-                          const img = await loadImage(url);
-                          setImage(img);
-                        } catch {}
-                      }}
-                    >
-                      Use on Canvas
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="h-8 px-2 text-xs"
-                      onClick={() => {
-                        setGeneratedDataUrl(url);
-                        setPreviewOpen(true);
-                      }}
-                    >
-                      Preview
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {gallery.length === 0 && (
-                <div className="text-xs text-slate-500">No generations yet.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Toolbar - Main Actions */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4">
-        <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-2xl p-3">
-          <div className="flex gap-3 items-center justify-center">
-            {/* Upload Button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-200 text-sm font-medium shadow-lg"
-            >
-              <Upload size={16} />
-              <span className="hidden sm:inline">Upload</span>
-            </button>
-
-            {/* New Canvas Button */}
-            <button
-              onClick={() => {
+    <div className={`relative h-full bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 overflow-hidden ${className}`}>
+      {/* Top Left - Home Button & Canvas Info (only show when canvas is active) */}
+      {image && (
+        <div className="fixed top-6 left-6 z-30 space-y-3">
+          <button
+            onClick={() => {
+              if (window.confirm("Go back to start? Any unsaved work will be lost.")) {
                 setShowStartOptions(true);
                 setImage(null);
                 clearAll();
-              }}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-200 text-sm font-medium shadow-lg"
-            >
-              <Square size={16} />
-              <span className="hidden sm:inline">New</span>
-            </button>
-
-            {/* Undo/Redo */}
-            <div className="flex gap-2">
-              <button
-                onClick={undo}
-                disabled={!canUndo || isGenerating}
-                className="flex items-center gap-2 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 rounded-xl transition-all duration-200 text-sm font-medium"
-              >
-                <Undo size={16} />
-              </button>
-              <button
-                onClick={redo}
-                disabled={!canRedo || isGenerating}
-                className="flex items-center gap-2 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 rounded-xl transition-all duration-200 text-sm font-medium"
-              >
-                <Redo size={16} />
-              </button>
-            </div>
-
-            {/* Clear */}
-            <button
-              onClick={clearAll}
-              disabled={isGenerating}
-              className="flex items-center gap-2 px-3 py-2.5 bg-red-100 hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed text-red-700 rounded-xl transition-all duration-200 text-sm font-medium"
-            >
-              <Trash2 size={16} />
-            </button>
-
-            {/* Download */}
-            <button
-              onClick={handleDownload}
-              disabled={!image || isGenerating}
-              className="flex items-center gap-2 px-3 py-2.5 bg-green-100 hover:bg-green-200 disabled:opacity-50 disabled:cursor-not-allowed text-green-700 rounded-xl transition-all duration-200 text-sm font-medium"
-            >
-              <Download size={16} />
-            </button>
-
-            {/* Generate/Edit Button */}
-            <div className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 rounded-xl p-[1px] shadow-xl">
-              <button
-                onClick={() => {
-                  if (
-                    activeTool === "mask" &&
-                    maskStrokes.length > 0 &&
-                    maskPrompt.trim()
-                  ) {
-                    if (apiClient) {
-                      handleGenerate(maskPrompt);
-                    } else {
-                      alert(
-                        `Demo Mode: Would generate with mask prompt: "${maskPrompt}"`
-                      );
-                    }
-                  } else {
-                    if (apiClient) {
-                      setShowPromptModal(true);
-                    } else {
-                      alert(
-                        "Demo Mode: Would open prompt modal for AI generation"
-                      );
-                    }
-                  }
-                }}
-                disabled={
-                  !image ||
-                  isGenerating ||
-                  (activeTool === "mask" &&
-                    (maskStrokes.length === 0 || !maskPrompt.trim()))
-                }
-                className="w-full font-bold py-2.5 px-6 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-blue-600 whitespace-nowrap text-sm"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                    <span className="hidden sm:inline">Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap size={16} />
-                    {activeTool === "mask" ? "Edit Mask" : "Edit"}
-                  </>
-                )}
-              </button>
-            </div>
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xl border border-slate-300 rounded-xl hover:bg-white transition-all duration-200 shadow-lg text-slate-700 hover:text-slate-900 font-medium text-sm"
+            title="Back to start"
+          >
+            <Home size={16} />
+            <span>Home</span>
+          </button>
+          
+          {/* Canvas Dimensions Indicator */}
+          <div className="px-3 py-2 bg-white/90 backdrop-blur-xl border border-slate-300 rounded-xl shadow-lg">
+            <p className="text-xs text-slate-600 font-medium">
+              Canvas: {dimensions.width} × {dimensions.height}px
+            </p>
           </div>
         </div>
+      )}
+
+      {/* Full Screen Canvas */}
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        {image ? (
+          <div
+            className="relative w-full max-h-full flex items-center justify-center"
+            style={{ maxWidth: `min(100%, ${config.canvas.maxWidth}px)` }}
+          >
+            <AnnotationCanvas
+              dimensions={dimensions}
+              annotations={annotations}
+              maskStrokes={maskStrokes}
+              currentPath={currentPath}
+              isDrawing={isDrawing}
+              activeTool={activeTool}
+              startPos={startPos}
+              currentMousePos={currentMousePos}
+              selectedAnnotationId={selectedAnnotationId}
+              isDragging={isDragging}
+              dragType={dragType}
+              image={image}
+              colors={colors}
+              sizes={sizes}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-lg"
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center text-slate-400 pointer-events-none">
+            <Square size={80} className="mb-4 opacity-20" strokeWidth={1} />
+            <p className="text-sm font-medium opacity-40">Your canvas will appear here</p>
+          </div>
+        )}
       </div>
+
+      {/* Left Overlay - Drawing Toolbar (only show when canvas is active) */}
+      {image && (
+        <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-40">
+          <div className="space-y-4">
+            <DrawingToolbar
+              activeTool={activeTool}
+              onToolSelect={(tool) => {
+                if (tool === activeTool) {
+                  setActiveTool(null);
+                  if (tool === "mask") {
+                    setMaskPrompt("");
+                  }
+                } else {
+                  setActiveTool(tool);
+                }
+              }}
+              isMaskToolActive={activeTool === "mask"}
+              isGenerating={isGenerating}
+              className="bg-white/90 backdrop-blur-xl border-slate-300"
+            />
+
+            <PropertiesPanel
+              activeTool={activeTool}
+              colors={colors}
+              sizes={sizes}
+              onColorChange={handleColorChange}
+              onSizeChange={handleSizeChange}
+              className="bg-white/90 backdrop-blur-xl border-slate-300"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Right Overlay - Gallery (only show when canvas is active) */}
+      <GeneratedGallery
+        isVisible={!!image}
+        gallery={gallery}
+        onUseImage={(img) => {
+          // Recompute to respect max width while preserving aspect ratio
+          const maxWidth = config.canvas.maxWidth;
+          const maxHeight = config.canvas.maxHeight;
+          const canvasDims = calculateCanvasDimensions(
+            img.width,
+            img.height,
+            maxWidth,
+            maxHeight
+          );
+          setImage(img);
+          setDimensions(canvasDims);
+        }}
+        onView={(url) => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
+        onClearAll={() => { setGallery([]); try { window.localStorage.removeItem("canvas_generated_gallery"); } catch {} }}
+      />
+
+      {/* Bottom Toolbar - Main Actions (only show when canvas is active) */}
+      <MainActionsToolbar
+        isVisible={!!image}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        isGenerating={isGenerating}
+        isImageLoaded={!!image}
+        isMaskActive={activeTool === "mask"}
+        hasMaskSelection={maskStrokes.length > 0}
+        maskPrompt={maskPrompt}
+        onClickUpload={() => fileInputRef.current?.click()}
+        onClickNew={() => {
+          if (window.confirm("Create a new canvas? Any unsaved work will be lost.")) {
+            setShowStartOptions(true);
+            setImage(null);
+            clearAll();
+          }
+        }}
+        onUndo={undo}
+        onRedo={redo}
+        onClear={clearAll}
+        onDownload={handleDownload}
+        onGenerate={() => {
+          if (
+            activeTool === "mask" &&
+            maskStrokes.length > 0 &&
+            maskPrompt.trim()
+          ) {
+            if (apiClient) {
+              handleGenerate(maskPrompt);
+            } else {
+              alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
+            }
+          } else {
+            if (apiClient) {
+              setShowPromptModal(true);
+            } else {
+              alert("Demo Mode: Would open prompt modal for AI generation");
+            }
+          }
+        }}
+      />
 
       {/* Hidden file inputs */}
       <input
@@ -1023,79 +847,23 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       />
 
       {/* Mask Prompt Modal */}
-      {activeTool === "mask" && (
-        <div className="fixed bottom-[13vh] left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4">
-          <div className="bg-white/95 backdrop-blur-xl border border-slate-200 rounded-xl shadow-2xl p-4">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Lasso size={16} />
-                <span className="font-medium">
-                  {maskStrokes.length > 0
-                    ? "Edit Selected Area"
-                    : "Paint to Select Area"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={maskPrompt}
-                  onChange={(e) => setMaskPrompt(e.target.value)}
-                  placeholder={
-                    maskStrokes.length > 0
-                      ? "Describe how to change the selected area..."
-                      : "First paint an area to select, then describe changes..."
-                  }
-                  className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  disabled={maskStrokes.length === 0}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      maskStrokes.length > 0 &&
-                      maskPrompt.trim()
-                    ) {
-                      e.preventDefault();
-                      if (apiClient) {
-                        handleGenerate(maskPrompt);
-                      } else {
-                        alert(
-                          `Demo Mode: Would generate with mask prompt: "${maskPrompt}"`
-                        );
-                      }
-                    }
-                  }}
-                />
-
-                <div className="flex items-center gap-2">
-                  {maskStrokes.length > 0 && (
-                    <button
-                      onClick={() => {
-                        clearMaskStrokes();
-                        setMaskPrompt("");
-                      }}
-                      className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-all duration-200 font-medium text-sm"
-                    >
-                      Clear
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setActiveTool(null);
-                      setMaskPrompt("");
-                      clearMaskStrokes();
-                    }}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all duration-200 font-medium text-sm"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MaskPromptBar
+        isActive={activeTool === "mask"}
+        maskStrokesCount={maskStrokes.length}
+        maskPrompt={maskPrompt}
+        setMaskPrompt={setMaskPrompt}
+        onSubmit={() => {
+          if (apiClient) {
+            handleGenerate(maskPrompt);
+          } else {
+            alert(`Demo Mode: Would generate with mask prompt: "${maskPrompt}"`);
+          }
+        }}
+        onClear={() => { clearMaskStrokes(); setMaskPrompt(""); }}
+        onCancel={() => { setActiveTool(null); setMaskPrompt(""); clearMaskStrokes(); }}
+        isApiAvailable={!!apiClient}
+      />
+      
       <GeneratedImageModal
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}
@@ -1107,6 +875,22 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             setPreviewOpen(false);
           }
         }}
+      />
+
+      {/* Welcome Modal - Shows on top of canvas */}
+      <WelcomeStartModal
+        isOpen={showStartOptions && !image}
+        showSizeSelector={showSizeSelector}
+        onOpenSizeSelector={() => setShowSizeSelector(true)}
+        onCloseSizeSelector={() => setShowSizeSelector(false)}
+        onClickUpload={() => fileInputRef.current?.click()}
+        presetSizes={presetSizes}
+        customWidth={customWidth}
+        customHeight={customHeight}
+        setCustomWidth={setCustomWidth}
+        setCustomHeight={setCustomHeight}
+        onCreateCustomSize={handleCustomSize}
+        onSelectPreset={(w, h) => createBlankCanvas(w, h)}
       />
     </div>
   );

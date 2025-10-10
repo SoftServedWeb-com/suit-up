@@ -20,9 +20,9 @@ export function GeneratedImageModal({ isOpen, onClose, imageDataUrl, onSave }: G
         </DialogHeader>
         <div className="space-y-4">
           {imageDataUrl && (
-            <div className="relative w-full aspect-square overflow-hidden rounded-lg border">
+            <div className="relative w-full overflow-hidden rounded-lg border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageDataUrl} alt="Generated" className="w-full h-full object-contain" />
+              <img src={imageDataUrl} alt="Generated" className="w-full h-auto" />
             </div>
           )}
           <div className="flex justify-end gap-2">

@@ -87,7 +87,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   }, [image, drawOnCanvas]);
 
   return (
-    <div className="relative">
+    <div className="relative p-4">
       {/* Hidden mask canvas for mask operations */}
       <canvas
         ref={maskCanvasRef}
@@ -109,10 +109,9 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         onTouchEnd={onTouchEnd}
         className={`border border-gray-300 rounded-lg shadow-sm ${className}`}
         style={{
-          maxWidth: "100%",
-          maxHeight: "100%",
-          width: "auto",
+          width: "100%",
           height: "auto",
+          maxHeight: "80vh",
           touchAction: "none",
           objectFit: "contain",
         }}

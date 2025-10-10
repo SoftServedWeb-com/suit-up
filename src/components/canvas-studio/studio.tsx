@@ -37,8 +37,8 @@ export default function CanvasStudio() {
             brushSize: 30,
           },
           canvas: {
-            maxWidth: 1200,
-            maxHeight: 800,
+            maxWidth: 1400,
+            maxHeight: 1800,
             backgroundColor: "#ffffff",
           },
         }}
