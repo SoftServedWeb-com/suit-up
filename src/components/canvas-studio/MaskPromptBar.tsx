@@ -30,8 +30,8 @@ export const MaskPromptBar: React.FC<MaskPromptBarProps> = ({
   if (!isActive) return null;
 
   return (
-    <div className="mt-4">
-      <Card className="border-primary/20 bg-primary/5">
+    <div className="fixed bottom-[13vh] left-1/2 transform -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+      <Card className="border-primary/20 bg-white/95 backdrop-blur-xl shadow-2xl">
         <CardContent className="p-4">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

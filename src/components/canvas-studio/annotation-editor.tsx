@@ -340,6 +340,17 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
 
+      // Priority: If drawing tools are active, draw instead of selecting
+      if (
+        activeTool === "draw" ||
+        activeTool === "arrow" ||
+        activeTool === "mask"
+      ) {
+        startDrawing(point);
+        return;
+      }
+
+      // No active tool - check for dragging/selecting annotations
       const didStartDrag = startDragging(point);
       if (didStartDrag) {
         const textAnn = annotations.find(
@@ -357,14 +368,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
       // Click on empty canvas - deselect
       setSelectedAnnotationId(null);
-
-      if (
-        activeTool === "draw" ||
-        activeTool === "arrow" ||
-        activeTool === "mask"
-      ) {
-        startDrawing(point);
-      }
     },
     [
       activeTool,
@@ -396,8 +399,18 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         return;
       }
 
-      // Update cursor based on what's under the mouse
-      if (!activeTool || activeTool === null) {
+      // Update cursor based on active tool and what's under the mouse
+      // Priority: Active drawing tools override everything
+      if (activeTool === "draw" || activeTool === "mask") {
+        setCursorStyle("crosshair");
+      } else if (activeTool === "arrow") {
+        setCursorStyle("crosshair");
+      } else if (activeTool === "image") {
+        setCursorStyle("crosshair");
+      } else if (activeTool === "text") {
+        setCursorStyle("text");
+      } else if (!activeTool || activeTool === null) {
+        // No active tool - show context-aware cursors for selection/resizing
         const handleSize = 12;
         const handleTolerance = 6;
         let newCursor = "default";
@@ -458,14 +471,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         }
 
         setCursorStyle(newCursor);
-      } else if (activeTool === "image") {
-        setCursorStyle("crosshair");
-      } else if (activeTool === "text") {
-        setCursorStyle("text");
-      } else if (activeTool === "draw" || activeTool === "mask") {
-        setCursorStyle("crosshair");
-      } else if (activeTool === "arrow") {
-        setCursorStyle("crosshair");
       }
     },
     [isDrawing, isDragging, continueDrawing, continueDragging, zoomLevel, annotations, selectedAnnotationId, activeTool]
