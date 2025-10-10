@@ -44,6 +44,10 @@ export class CanvasAPIClient {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle subscription limit errors specially
+        if (data.type === "SUBSCRIPTION_LIMIT") {
+          throw new Error(data.error || "Subscription limit reached");
+        }
         throw new Error(data.error || "Generation failed");
       }
 
@@ -51,6 +55,7 @@ export class CanvasAPIClient {
         success: true,
         result: {
           output: data.resultImageDataUrl,
+          creditsRemaining: data.creditsRemaining,
         },
       };
     } catch (error) {
@@ -73,7 +78,10 @@ export class CanvasAPIClient {
       if (!res.ok) {
         return { success: false, error: data.error || "Failed to save image" };
       }
-      return { success: true, url: data.url };
+      return { 
+        success: true, 
+        url: data.url
+      };
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : "Failed to save image" };
     }

@@ -144,9 +144,41 @@ export async function POST(request: Request) {
       throw new Error("No image generated");
     }
 
+    // Consume credit for generation
     const creditResult = await consumeTryOnCredit(userId);
     if (!creditResult.success) {
       throw new Error("Failed to consume credit");
+    }
+
+    let creditsRemaining = creditResult.remaining;
+
+    // If masking was used, consume additional credit for every 2 mask strokes
+    if (maskDataStr) {
+      try {
+        const maskData = JSON.parse(maskDataStr);
+        const maskStrokeCount = Array.isArray(maskData) ? maskData.length : 0;
+        
+        // Consume 1 credit for every 2 mask strokes
+        const maskCreditsToConsume = Math.floor(maskStrokeCount / 2);
+        
+        if (maskCreditsToConsume > 0) {
+          console.log(`[Canvas generate] Consuming ${maskCreditsToConsume} additional credit(s) for ${maskStrokeCount} mask strokes`);
+          
+          for (let i = 0; i < maskCreditsToConsume; i++) {
+            const maskCreditResult = await consumeTryOnCredit(userId);
+            if (!maskCreditResult.success) {
+              console.error("Failed to consume masking credit:", maskCreditResult.error);
+              // Don't fail the entire request if masking credit consumption fails
+              // Just log and continue with whatever credits were consumed
+              break;
+            }
+            creditsRemaining = maskCreditResult.remaining;
+          }
+        }
+      } catch (parseError) {
+        console.error("Failed to parse maskData for credit calculation:", parseError);
+        // Continue without consuming masking credits if parsing fails
+      }
     }
 
     // Return base64 data URL for client-side preview; saving is a separate step
@@ -154,7 +186,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       resultImageDataUrl: resultDataUrl,
-      creditsRemaining: creditResult.remaining,
+      creditsRemaining: creditsRemaining,
     });
   } catch (error: any) {
     console.error("Canvas generate error:", error);

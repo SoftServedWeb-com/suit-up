@@ -714,8 +714,14 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           setPreviewOpen(true);
           addToGallery(response.result.output);
           clearMaskStrokes();
+          
+          // Show credits remaining if available
+          if (response.result.creditsRemaining !== undefined) {
+            toast.success(`Image generated! ${response.result.creditsRemaining} credits remaining.`);
+          }
         } else {
-          throw new Error(response.error?.message || "Generation failed");
+          const errorMsg = response.error?.message || response.error || "Generation failed";
+          throw new Error(errorMsg);
         }
       } catch (error) {
         const errorMessage =
@@ -742,7 +748,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
 
   return (
     <div className={`min-h-screen bg-background ${className}`}>
-      <Header />
       
       <main className="max-w-7xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
         {/* Creative Studios Navigation */}
@@ -1398,6 +1403,9 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           const res = await apiClient.saveGeneratedImage(generatedDataUrl);
           if (res.success) {
             setPreviewOpen(false);
+            toast.success("Image saved successfully!");
+          } else {
+            toast.error(res.error || "Failed to save image");
           }
         }}
         onTryOn={() => {

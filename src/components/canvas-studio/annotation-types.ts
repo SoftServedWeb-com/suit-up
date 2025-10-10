@@ -107,6 +107,7 @@ export interface GenerationRequest {
     result?: {
       output: string; // URL or base64 of generated image
       requestId?: string;
+      creditsRemaining?: number;
     };
     error?: string;
   }

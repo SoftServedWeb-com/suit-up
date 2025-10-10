@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     const url = await saveBase64ToS3(base64, mimeType);
 
-    // Optionally persist a lightweight record
+    // Persist a lightweight record (saving is free, no credits used)
     await db.tryOnRequest.create({
       data: {
         predictionId:`canvas-save-${Date.now()}`,
@@ -38,7 +38,10 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, url });
+    return NextResponse.json({ 
+      success: true, 
+      url
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to save" }, { status: 500 });
   }

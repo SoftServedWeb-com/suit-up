@@ -1,6 +1,8 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { PLAN_LIMITS } from "@/lib/subscription";
+import Header from "@/components/page/header";
+import FloatingSubscriptionIndicator from "@/components/subscription-data";
 
 export default async function DashboardLayout({
   children,
@@ -64,6 +66,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div>{children}</div>
+    <div>
+      <Header />
+      {/* Floating Subscription Indicator */}
+      <FloatingSubscriptionIndicator />
+
+      {children}
+    </div>
   );
 }
