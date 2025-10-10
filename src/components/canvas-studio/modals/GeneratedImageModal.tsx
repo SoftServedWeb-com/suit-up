@@ -3,15 +3,17 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShirtIcon } from "lucide-react";
 
 interface GeneratedImageModalProps {
   isOpen: boolean;
   onClose: () => void;
   imageDataUrl: string | null;
   onSave?: () => Promise<void>;
+  onTryOn?: () => void;
 }
 
-export function GeneratedImageModal({ isOpen, onClose, imageDataUrl, onSave }: GeneratedImageModalProps) {
+export function GeneratedImageModal({ isOpen, onClose, imageDataUrl, onSave, onTryOn }: GeneratedImageModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-3xl">
@@ -25,11 +27,19 @@ export function GeneratedImageModal({ isOpen, onClose, imageDataUrl, onSave }: G
               <img src={imageDataUrl} alt="Generated" className="w-full h-auto" />
             </div>
           )}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-between gap-2">
             <Button variant="outline" onClick={onClose}>Close</Button>
-            {onSave && (
-              <Button onClick={onSave}>Save to Library</Button>
-            )}
+            <div className="flex gap-2">
+              {onTryOn && (
+                <Button variant="secondary" onClick={onTryOn}>
+                  <ShirtIcon className="h-4 w-4 mr-2" />
+                  Try On
+                </Button>
+              )}
+              {onSave && (
+                <Button onClick={onSave}>Save to Library</Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

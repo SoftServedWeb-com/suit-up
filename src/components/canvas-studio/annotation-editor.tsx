@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useRef, useCallback } from "react";
-import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, Sparkle } from "lucide-react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, ShirtIcon } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
-import { TextInputModal, PromptInputModal, GeneratedImageModal } from "./modals";
+import { TextInputModal, PromptInputModal, GeneratedImageModal, TryOnModal } from "./modals";
 import {
   loadImage,
   calculateCanvasDimensions,
@@ -86,6 +86,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const [isToolsPanelOpen, setIsToolsPanelOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1.0);
   const [cursorStyle, setCursorStyle] = useState<string>("default");
+  const [showTryOnModal, setShowTryOnModal] = useState(false);
+  const [tryOnGarmentUrl, setTryOnGarmentUrl] = useState<string | null>(null);
 
   const addToGallery = (dataUrl: string) => {
     setGallery((prev) => {
@@ -984,8 +986,8 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                 disabled={isGenerating || activeTool === "mask"}
                                 className="h-auto aspect-square flex flex-col items-center gap-1"
                               >
-                                <Sparkle className="h-8 w-8 text-primary" />
-                                <span className="text-md text-primary">Idealize</span>
+                                <Sparkles className="h-8 w-8" />
+                                <span className="text-xs">Prompt</span>
                               </Button>
                             </div>
 
@@ -1109,35 +1111,50 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                   <X className="h-4 w-4" />
                                 </Button>
 
-                                <div className="p-1.5 flex gap-1.5">
+                                <div className="p-1.5 space-y-1.5">
+                                  <div className="flex gap-1.5">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs flex-1"
+                                      onClick={async () => {
+                                        try {
+                                          const img = await loadImage(url);
+                                          const maxWidth = config.canvas.maxWidth;
+                                          const maxHeight = config.canvas.maxHeight;
+                                          const canvasDims = calculateCanvasDimensions(
+                                            img.width,
+                                            img.height,
+                                            maxWidth,
+                                            maxHeight
+                                          );
+                                          setImage(img);
+                                          setDimensions(canvasDims);
+                                        } catch {}
+                                      }}
+                                    >
+                                      Use
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="text-xs flex-1"
+                                      onClick={() => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
+                                    >
+                                      View
+                                    </Button>
+                                  </div>
                                   <Button
-                                    variant="outline"
-                                    // size="sm"
-                                    className="text-md flex-1"
-                                    onClick={async () => {
-                                      try {
-                                        const img = await loadImage(url);
-                                        const maxWidth = config.canvas.maxWidth;
-                                        const maxHeight = config.canvas.maxHeight;
-                                        const canvasDims = calculateCanvasDimensions(
-                                          img.width,
-                                          img.height,
-                                          maxWidth,
-                                          maxHeight
-                                        );
-                                        setImage(img);
-                                        setDimensions(canvasDims);
-                                      } catch {}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="text-xs w-full"
+                                    onClick={() => {
+                                      setTryOnGarmentUrl(url);
+                                      setShowTryOnModal(true);
                                     }}
                                   >
-                                    Use
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    className="text-md flex-1"
-                                    onClick={() => { setGeneratedDataUrl(url); setPreviewOpen(true); }}
-                                  >
-                                    View
+                                    <ShirtIcon className="h-3 w-3 mr-1" />
+                                    Try On
                                   </Button>
                                 </div>
                               </div>
@@ -1383,7 +1400,29 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             setPreviewOpen(false);
           }
         }}
+        onTryOn={() => {
+          if (generatedDataUrl) {
+            setTryOnGarmentUrl(generatedDataUrl);
+            setShowTryOnModal(true);
+          }
+        }}
       />
+
+      {/* Try-On Modal */}
+      {tryOnGarmentUrl && (
+        <TryOnModal
+          isOpen={showTryOnModal}
+          onClose={() => {
+            setShowTryOnModal(false);
+            setTryOnGarmentUrl(null);
+          }}
+          garmentImageUrl={tryOnGarmentUrl}
+          onTryOnComplete={(resultUrl) => {
+            addToGallery(resultUrl);
+            toast.success("Virtual try-on completed! Added to gallery.");
+          }}
+        />
+      )}
 
       {/* Welcome Modal - Shows on top of canvas */}
       <WelcomeStartModal
