@@ -16,7 +16,10 @@ export default async function RootLayout({
 
 
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInFallbackRedirectUrl="/dashboard"
+      signUpFallbackRedirectUrl="/dashboard"
+    >
       <html lang="en">
         <body
             className={`antialiased `}

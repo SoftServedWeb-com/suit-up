@@ -13,7 +13,7 @@ export default async function DashboardLayout({
 
   // Protect the route by checking if the user is signed in
   if (!userId) {
-    return redirectToSignIn();
+    return redirectToSignIn({ returnBackUrl: '/dashboard' });
   }
   // TODO For using dashboard change this.
   const user = await currentUser();

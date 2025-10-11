@@ -11,7 +11,7 @@ export default async function PromptStudioLayout({
 
   // Protect the route by checking if the user is signed in
   if (!userId) {
-    return redirectToSignIn();
+    return redirectToSignIn({ returnBackUrl: '/dashboard/preset-gallery' });
   }
 
   const user = await currentUser();
