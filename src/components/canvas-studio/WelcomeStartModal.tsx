@@ -159,9 +159,9 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
               <h3 className="text-lg font-semibold mb-2">Upload Image</h3>
               <p className="text-sm text-muted-foreground text-center mb-3">Start with an existing photo or design</p>
               <div className="text-xs text-muted-foreground/80 text-center space-y-1">
-                <p>→ Use Mask tool to edit areas</p>
-                <p>→ Click Idealize to enhance</p>
-                <p>→ Try on your creation!</p>
+                <p>- Use Mask tool to edit areas</p>
+                <p>- Click visualize to enhance</p>
+                <p>- Try on your creation!</p>
               </div>
             </Button>
 
@@ -176,9 +176,9 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
               <h3 className="text-lg font-semibold mb-2">Blank Canvas</h3>
               <p className="text-sm text-muted-foreground text-center mb-3">Create from your imagination</p>
               <div className="text-xs text-muted-foreground/80 text-center space-y-1">
-                <p>→ Draw or add images</p>
-                <p>→ Click Idealize to generate</p>
-                <p>→ Try on your design!</p>
+                <p>- Draw or add images</p>
+                <p>- Click visualize to generate</p>
+                <p>- Try on your design!</p>
               </div>
             </Button>
           </div>

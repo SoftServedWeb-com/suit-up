@@ -1,7 +1,7 @@
 import { SignInButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
-import { TrailRoom } from "@/lib/logo";
+import { TrialRoomStudio } from "@/lib/logo";
 import Footer from "../footer";
 import { Button } from "../ui/button";
 import { getTodaysColorTheme} from "@/lib/colors-switch";
@@ -60,7 +60,7 @@ export default async function Home2() {
         {/* Centered Logo */}
         <div className="absolute inset-0 z-20 flex items-center justify-center">
           <div className="w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-            <TrailRoom className="text-white" />
+            <TrialRoomStudio className="text-white" />
           </div>
         </div>
 

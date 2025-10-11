@@ -30,25 +30,25 @@ const guidanceConfig: Record<GuidanceStep, {
   'blank-canvas-start': {
     icon: <Palette className="h-4 w-4" />,
     title: "Start Creating",
-    description: "Use the Tools panel on the left to draw or add images, then click 'Idealize' to transform with AI",
+    description: "Use the Tools panel on the left to draw or add images, then click 'Visualize' to transform with AI",
     variant: 'default' as const,
   },
   'uploaded-image-start': {
     icon: <ImageIcon className="h-4 w-4" />,
     title: "Edit Your Image",
-    description: "Use the Mask tool to select areas to edit, or add annotations. Click 'Idealize' when ready",
+    description: "Use the Mask tool to select areas to edit, or add annotations. Click 'Visualize' when ready",
     variant: 'default' as const,
   },
   'has-annotations': {
     icon: <Sparkles className="h-4 w-4" />,
     title: "Ready to Generate",
-    description: "Your design is ready. Click the 'Idealize' button below to transform it with AI",
+    description: "Your design is ready. Click the 'Visualize' button below to transform it with AI",
     variant: 'default' as const,
   },
   'ready-to-idealize': {
     icon: <Sparkles className="h-4 w-4" />,
-    title: "Next: Click Idealize",
-    description: "Click the 'Idealize' button below to generate your design with AI",
+    title: "Next: Click Visualize",
+    description: "Click the 'Visualize' button below to generate your design with AI",
     variant: 'default' as const,
   },
   'has-generated': {
@@ -137,12 +137,12 @@ export const GuidanceBanner: React.FC<GuidanceBannerProps> = ({
         </AlertDescription>
       </Alert>
       
-      {/* Arrow pointing down when ready to idealize */}
+      {/* Arrow pointing down when ready to visualize */}
       {showArrow && (
         <div className="flex flex-col items-center mt-2">
           <ArrowDown className="h-5 w-5 text-primary" strokeWidth={2} />
           <div className="mt-1 bg-primary text-primary-foreground px-2 py-0.5 rounded text-xs">
-            Click Idealize
+            Click Visualize
           </div>
         </div>
       )}

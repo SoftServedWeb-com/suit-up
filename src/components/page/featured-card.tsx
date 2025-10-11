@@ -20,11 +20,13 @@ export const FeatureCard = ({
   href,
   imageSrc,
   description,
+  Logo,
 }: {
   title: string;
   href: string;
   imageSrc: string;
   description: string;
+  Logo?: React.ReactNode;
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -78,51 +80,33 @@ export const FeatureCard = ({
 
         {/* Content */}
         <div className="relative h-full z-10 flex flex-col justify-between p-8 items-center text-center">
-          {/* Top Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : -10 }}
-            transition={{ duration: 0.3 }}
-            className="inline-block">
-            <span className="px-3 py-1 text-xs font-medium tracking-wider uppercase bg-accent/20 text-accent rounded-full border border-accent/30">
-              Explore
+          {/* Top Badge - static (no hover animation) */}
+          <div className="w-full flex justify-center">
+            <span className="px-3 py-0.5 text-xs font-medium tracking-wider uppercase bg-accent/20 text-accent  border border-accent/30">
+              {/* Explore */}
             </span>
-          </motion.div>
+          </div>
+          {Logo && (
+            <div className="flex items-center max-w-[150px] justify-center">
+              {Logo}
+            </div>
+          )}
 
-          {/* Title and Description */}
+          {/* Title, Logos (optional) and Description - always visible */}
           <div className="space-y-4 flex flex-col items-center">
-            <motion.h2
-              className="text-lg uppercase text-white tracking-[3px] font-medium"
-              animate={{
-                y: isHovered ? -8 : 0,
-              }}
-              transition={{ duration: 0.3 }}>
+            <h2 className="text-lg uppercase text-white tracking-[3px] font-medium">
               {title}
-            </motion.h2>
+            </h2>
 
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{
-                opacity: isHovered ? 1 : 0,
-                y: isHovered ? 0 : 10,
-              }}
-              transition={{ duration: 0.3, delay: 0.1 }}
-              className="text-md hidden hover:block text-white font-medium max-w-md mx-auto">
+            <p className="text-md text-white leading-tight font-medium max-w-md mx-auto">
               {description}
-            </motion.p>
+            </p>
 
-            {/* Arrow indicator */}
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{
-                opacity: isHovered ? 1 : 0,
-                x: isHovered ? 0 : -10,
-              }}
-              transition={{ duration: 0.3, delay: 0.15 }}
-              className="flex items-center justify-center gap-2 text-accent underline italic">
+            {/* Arrow indicator - static (no hover animation) */}
+            {/* <div className="flex items-center justify-center gap-2 text-accent underline italic">
               <span className="text-sm font-medium">Enter</span>
               <ChevronRight className="w-4 h-4" />
-            </motion.div>
+            </div> */}
           </div>
         </div>
         {/* Border Glow Effect */}

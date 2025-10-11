@@ -1,6 +1,7 @@
 "use client";
 
 import { FeatureCard } from "@/components/page/featured-card";
+import { StudioLogo, TrialRoom } from "@/lib/logo";
 import { motion } from "motion/react";
 
 export default function Dashboard() {
@@ -14,6 +15,7 @@ export default function Dashboard() {
           <FeatureCard
             title="Trial room"
             href="/dashboard/trialroom"
+            Logo={TrialRoom}
             imageSrc="https://res.cloudinary.com/duwh0ork4/image/upload/v1760119127/trialroom-wallpaper_ldjq5e.png"
             description="Experience virtual try-ons with AI-powered precision. See how garments fit before you commit."
           />
@@ -21,6 +23,7 @@ export default function Dashboard() {
           <FeatureCard
             title="Studio"
             href="/dashboard/studio"
+            Logo={StudioLogo}
             imageSrc="https://res.cloudinary.com/duwh0ork4/image/upload/v1760119127/studio-wallpaper_mdvsfn.png"
             description="Create and annotate with professional tools. Transform your ideas into reality with AI assistance."
           />

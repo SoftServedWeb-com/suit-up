@@ -4,8 +4,7 @@ export const sswLogo = (
     width="98"
     height="22"
     viewBox="0 0 98 22"
-    fill="none"
-  >
+    fill="none">
     <path
       d="M44.088 0.142242C43.6306 0.136064 43.1784 0.205226 42.7595 0.355667C41.9216 0.656554 41.27 1.22247 40.7668 1.85573C38.7537 4.38878 38.1842 8.35003 37.3601 11.914C36.9481 13.696 36.521 15.3588 36.0521 16.5174C35.5832 17.676 35.0648 18.0997 35.0584 18.1017C35.0552 18.1027 35.0621 18.1446 34.799 18.024C34.5358 17.9034 34.0665 17.5811 33.4808 16.974C32.3093 15.7598 30.6888 13.457 28.6755 9.84407C28.4609 9.45906 28.1022 9.17506 27.6783 9.05454C27.2543 8.93401 26.7999 8.98683 26.4149 9.20139C26.2242 9.30762 26.0564 9.45037 25.9209 9.62147C25.7854 9.79257 25.685 9.98868 25.6253 10.1986C25.5656 10.4085 25.5479 10.6281 25.573 10.8449C25.5982 11.0617 25.6659 11.2714 25.7721 11.4621C27.8577 15.2046 29.5479 17.6846 31.0888 19.2818C31.8593 20.0804 32.5967 20.671 33.4144 21.0457C34.232 21.4204 35.194 21.5398 36.0437 21.2761C37.7433 20.7485 38.5225 19.273 39.1331 17.7642C39.7436 16.2555 40.1776 14.4828 40.5984 12.6628C41.44 9.02277 42.4228 5.11403 43.3688 3.92366C43.6053 3.62607 43.7814 3.52026 43.8829 3.48382C43.9844 3.44738 44.0646 3.42014 44.3708 3.52505C44.983 3.73487 46.3321 4.72238 48.0639 6.95069C48.3344 7.2987 48.7321 7.52501 49.1694 7.57983C49.6067 7.63465 50.0479 7.5135 50.3959 7.24302C50.5682 7.1091 50.7125 6.94255 50.8204 6.75287C50.9284 6.5632 50.9979 6.35412 51.0251 6.13757C51.0522 5.92102 51.0365 5.70125 50.9787 5.4908C50.9209 5.28034 50.8222 5.08333 50.6883 4.91101C48.7741 2.44805 47.2089 0.984136 45.4483 0.380764C45.0082 0.229919 44.5454 0.14842 44.088 0.142242Z"
       fill="#A808F3"
@@ -23,7 +22,7 @@ export const sswLogo = (
 
 import React from "react";
 
-export const TrailRoom: React.FC<{ className?: string }> = ({
+export const TrialRoomStudio: React.FC<{ className?: string }> = ({
   className = "text-black",
 }) => (
   <svg
@@ -31,8 +30,7 @@ export const TrailRoom: React.FC<{ className?: string }> = ({
     width="343"
     height="382"
     viewBox="0 0 343 382"
-    className={className}
-  >
+    className={className}>
     <path
       d="M6.31014 381.315V365.257H0.641235V363.102H14.185V365.257H8.51614V381.315H6.31014Z"
       fill="currentColor"
@@ -115,8 +113,7 @@ export const TrialRoomLogowithText: React.FC<{ className?: string }> = ({
     // height="343"
     viewBox="0 0 1281 343"
     fill="none"
-    className={className}
-  >
+    className={className}>
     <path
       d="M336.438 338.479C336.438 340.966 334.422 342.982 331.934 342.982H147.284C144.797 342.982 142.781 340.966 142.781 338.479V325.102C142.781 322.615 144.797 320.599 147.284 320.599H331.934C334.422 320.599 336.438 322.615 336.438 325.102V338.479Z"
       fill="currentColor"
@@ -196,8 +193,7 @@ export const pinkOverlay = (
     width="1920"
     height="1080"
     viewBox="0 0 1920 1080"
-    fill="none"
-  >
+    fill="none">
     <g filter="url(#filter0_n_6176_20484)">
       <rect width="1920" height="1134.58" fill="#84006A" fillOpacity="0.8" />
     </g>
@@ -209,8 +205,7 @@ export const pinkOverlay = (
         width="1920"
         height="1134.58"
         filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
+        colorInterpolationFilters="sRGB">
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend
           mode="normal"
@@ -261,8 +256,7 @@ export const yellowOverlay = (
     width="1930"
     height="1079"
     viewBox="0 0 1930 1079"
-    fill="none"
-  >
+    fill="none">
     <g filter="url(#filter0_n_6183_20523)">
       <rect
         x="0.855469"
@@ -281,8 +275,7 @@ export const yellowOverlay = (
         width="1928.41"
         height="1077.87"
         filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
+        colorInterpolationFilters="sRGB">
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend
           mode="normal"
@@ -333,8 +326,7 @@ export const redOverlay = (
     width="1921"
     height="1081"
     viewBox="0 0 1921 1081"
-    fill="none"
-  >
+    fill="none">
     <g filter="url(#filter0_n_6171_20446)">
       <rect
         x="0.175781"
@@ -353,8 +345,7 @@ export const redOverlay = (
         width="1920"
         height="1080"
         filterUnits="userSpaceOnUse"
-        colorInterpolationFilters="sRGB"
-      >
+        colorInterpolationFilters="sRGB">
         <feFlood floodOpacity="0" result="BackgroundImageFix" />
         <feBlend
           mode="normal"
@@ -396,5 +387,37 @@ export const redOverlay = (
         </feMerge>
       </filter>
     </defs>
+  </svg>
+);
+
+export const TrialRoom = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="337"
+    height="342"
+    viewBox="0 0 337 342"
+    fill="none">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M326.144 0.134766C330.155 0.134766 332.165 4.98537 329.328 7.82227L165.954 170.522L325.144 170.276L325.514 170.291C329.155 170.569 330.958 174.921 328.58 177.692L328.328 177.964L187.258 319.035H331.513C334 319.035 336.016 321.051 336.016 323.538V336.915C336.015 339.402 333.999 341.418 331.513 341.418H4.60446C0.592684 341.418 -1.41595 336.567 1.42087 333.73L163.875 171.276H5.60446C1.59277 171.276 -0.41592 166.426 2.42087 163.589L164.556 1.4541C165.4 0.609749 166.545 0.134887 167.739 0.134766H326.144ZM165.456 172.524L2.83493 335.145C1.30718 336.672 2.30752 339.251 4.39939 339.41L4.60446 339.418H331.513C332.895 339.418 334.015 338.297 334.016 336.915V323.538C334.016 322.156 332.895 321.035 331.513 321.035H182.429L326.914 176.55C328.491 174.973 327.374 172.278 325.145 172.277L165.456 172.524Z"
+      fill="white"
+    />
+  </svg>
+);
+
+export const StudioLogo = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="337"
+    height="342"
+    viewBox="0 0 337 342"
+    fill="none">
+    <path
+      fill-rule="evenodd"
+      clip-rule="evenodd"
+      d="M326.149 0.401367L326.519 0.416016C330.161 0.693655 331.964 5.04599 329.585 7.81738L329.333 8.08887L165.959 170.789L325.149 170.543C329.161 170.543 331.17 175.394 328.333 178.23L187.263 319.302H331.518C334.005 319.302 336.021 321.318 336.021 323.805V337.182C336.021 339.668 334.005 341.684 331.518 341.685H4.60984C0.598042 341.684 -1.41058 336.834 1.42625 333.997L163.88 171.543H5.60984C1.59816 171.543 -0.410534 166.692 2.42625 163.855L164.561 1.7207C165.405 0.876358 166.55 0.401496 167.745 0.401367H326.149ZM167.745 2.40137C167.081 2.4015 166.444 2.66547 165.975 3.13477L3.84031 165.27C2.26348 166.846 3.37994 169.543 5.60984 169.543H164.377L327.922 6.67188C329.495 5.09453 328.378 2.40139 326.149 2.40137H167.745Z"
+      fill="white"
+    />
   </svg>
 );

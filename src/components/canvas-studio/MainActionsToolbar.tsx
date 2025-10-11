@@ -99,7 +99,7 @@ export const MainActionsToolbar: React.FC<MainActionsToolbarProps> = ({
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      <span className="hidden sm:inline text-lg">{isMaskActive ? "Edit Mask" : "Idealize"}</span>
+                      <span className="hidden sm:inline text-lg">{isMaskActive ? "Edit Mask" : "Visualize"}</span>
                     </>
                   )}
                 </Button>
