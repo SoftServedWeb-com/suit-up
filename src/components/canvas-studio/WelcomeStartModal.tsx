@@ -45,8 +45,8 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
 
   if (showSizeSelector) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <Card className="w-full max-w-4xl mx-4 shadow-xl border-border">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <Card className="w-full max-w-4xl shadow-xl border-border max-h-[90vh] overflow-y-auto">
           <CardHeader className="relative">
             <button
               onClick={onCloseSizeSelector}
@@ -54,21 +54,22 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
             >
               <X size={18} className="text-muted-foreground" />
             </button>
-            <CardTitle className="text-2xl font-serif">Choose Canvas Size</CardTitle>
-            <CardDescription>Select a preset or create your own custom size</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl pr-8">Choose Canvas Size</CardTitle>
+            <CardDescription className="text-sm sm:text-base">Select a preset or create your own custom size</CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <CardContent className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {presetSizes.filter(p => !p.isFullscreen).map((preset) => (
                 <Button
                   key={preset.name}
                   variant="outline"
                   onClick={() => onSelectPreset(preset.width, preset.height)}
-                  className="h-auto flex flex-col items-center justify-center p-4 hover:bg-primary/5 hover:border-primary transition-all"
+                  className="h-auto flex flex-col items-center justify-center p-3 sm:p-4 hover:bg-primary/5 hover:border-primary transition-all"
                 >
-                  <Square size={24} className="mb-2 text-muted-foreground" />
-                  <span className="font-medium text-sm mb-1">{preset.name}</span>
+                  <Square size={20} className="mb-2 text-muted-foreground sm:hidden" />
+                  <Square size={24} className="mb-2 text-muted-foreground hidden sm:block" />
+                  <span className="font-medium text-xs sm:text-sm mb-1">{preset.name}</span>
                   <span className="text-xs text-muted-foreground">{preset.width} × {preset.height}</span>
                 </Button>
               ))}
@@ -79,53 +80,55 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
                 key={preset.name}
                 variant="outline"
                 onClick={() => onSelectPreset(preset.width, preset.height)}
-                className="w-full flex items-center justify-between p-4 h-auto hover:bg-primary/5 hover:border-primary transition-all"
+                className="w-full flex items-center justify-between p-3 sm:p-4 h-auto hover:bg-primary/5 hover:border-primary transition-all"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Maximize2 size={20} className="text-primary" />
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+                    <Maximize2 size={16} className="text-primary sm:hidden" />
+                    <Maximize2 size={20} className="text-primary hidden sm:block" />
                   </div>
                   <div className="text-left">
-                    <span className="block font-medium text-base">{preset.name}</span>
+                    <span className="block font-medium text-sm sm:text-base">{preset.name}</span>
                     <span className="block text-xs text-muted-foreground mt-0.5">Maximum available workspace</span>
                   </div>
                 </div>
-                <span className="text-sm text-muted-foreground">{preset.width} × {preset.height}px</span>
+                <span className="text-xs sm:text-sm text-muted-foreground">{preset.width} × {preset.height}px</span>
               </Button>
             ))}
 
             <Card className="bg-muted/50">
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Square size={16} />
+                <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                  <Square size={14} className="sm:hidden" />
+                  <Square size={16} className="hidden sm:block" />
                   Custom Size
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex gap-3 items-end">
+                <div className="flex flex-col sm:flex-row gap-3 items-end">
                   <div className="flex-1">
-                    <label className="block text-sm text-muted-foreground mb-2">Width (px)</label>
+                    <label className="block text-xs sm:text-sm text-muted-foreground mb-2">Width (px)</label>
                     <input
                       type="number"
                       value={customWidth}
                       onChange={(e) => setCustomWidth(e.target.value)}
                       min="100"
                       max="2400"
-                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-sm sm:text-base"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-sm text-muted-foreground mb-2">Height (px)</label>
+                    <label className="block text-xs sm:text-sm text-muted-foreground mb-2">Height (px)</label>
                     <input
                       type="number"
                       value={customHeight}
                       onChange={(e) => setCustomHeight(e.target.value)}
                       min="100"
                       max="2400"
-                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background"
+                      className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary bg-background text-sm sm:text-base"
                     />
                   </div>
-                  <Button onClick={onCreateCustomSize}>
+                  <Button onClick={onCreateCustomSize} className="w-full sm:w-auto">
                     Create
                   </Button>
                 </div>
@@ -139,25 +142,26 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <Card className="w-full max-w-2xl mx-4 shadow-xl border-border">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <Card className="w-full max-w-2xl shadow-xl border-border max-h-[90vh] overflow-y-auto">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-serif">Welcome to Canvas Studio</CardTitle>
-          <CardDescription className="text-base">Choose your starting point</CardDescription>
+          <CardTitle className="text-2xl font-medium">Welcome to Studio</CardTitle>
+          <CardDescription className="text-sm sm:text-base">Choose your starting point</CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <Button
               variant="outline"
               onClick={onClickUpload}
-              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[240px]"
+              className="h-auto flex flex-col items-center justify-center p-4 sm:p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[200px] sm:min-h-[240px]"
             >
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Upload size={28} className="text-primary" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                <Upload size={20} className="text-primary sm:hidden" />
+                <Upload size={28} className="text-primary hidden sm:block" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Upload Image</h3>
-              <p className="text-sm text-muted-foreground text-center mb-3">Start with an existing photo or design</p>
+              <h3 className="text-base sm:text-lg font-semibold mb-2">Upload Image</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center mb-2 sm:mb-3">Start with an existing photo or design</p>
               <div className="text-xs text-muted-foreground/80 text-center space-y-1">
                 <p>- Use Mask tool to edit areas</p>
                 <p>- Click visualize to enhance</p>
@@ -168,13 +172,14 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
             <Button
               variant="outline"
               onClick={onOpenSizeSelector}
-              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[240px]"
+              className="h-auto flex flex-col items-center justify-center p-4 sm:p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[200px] sm:min-h-[240px]"
             >
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <Square size={28} className="text-primary" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/10 rounded-full flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+                <Square size={20} className="text-primary sm:hidden" />
+                <Square size={28} className="text-primary hidden sm:block" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Blank Canvas</h3>
-              <p className="text-sm text-muted-foreground text-center mb-3">Create from your imagination</p>
+              <h3 className="text-base sm:text-lg font-semibold mb-2">Blank Canvas</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center mb-2 sm:mb-3">Create from your imagination</p>
               <div className="text-xs text-muted-foreground/80 text-center space-y-1">
                 <p>- Draw or add images</p>
                 <p>- Click visualize to generate</p>
@@ -183,8 +188,8 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
             </Button>
           </div>
 
-          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
-            <p className="text-sm text-center text-muted-foreground">
+          <div className="bg-primary/5 rounded-lg p-3 sm:p-4 border border-primary/20">
+            <p className="text-xs sm:text-sm text-center text-muted-foreground">
               <span className="font-medium">💡 Pro Tip:</span> All tools support tooltips! Hover over any button to learn what it does.
             </p>
           </div>
