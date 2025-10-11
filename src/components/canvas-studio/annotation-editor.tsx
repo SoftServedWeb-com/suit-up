@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, ShirtIcon, Maximize2, Minimize2 } from "lucide-react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, ShirtIcon, Maximize2, Minimize2, ArrowDown } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { TextInputModal, PromptInputModal, GeneratedImageModal, TryOnModal } from "./modals";
@@ -13,10 +13,12 @@ import {
 import WelcomeStartModal from "./WelcomeStartModal";
 import MaskPromptBar from "./MaskPromptBar";
 import MainActionsToolbar from "./MainActionsToolbar";
+import GuidanceBanner from "./GuidanceBanner";
 import Header from "@/components/page/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import Link from "next/link";
 
 import type { AnnotationConfig, GenerationRequest } from "./annotation-types";
@@ -90,6 +92,28 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const [showTryOnModal, setShowTryOnModal] = useState(false);
   const [tryOnGarmentUrl, setTryOnGarmentUrl] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isBlankCanvas, setIsBlankCanvas] = useState(false);
+  const [showToolsPanelBanner, setShowToolsPanelBanner] = useState(true);
+  const [showMaskToolBanner, setShowMaskToolBanner] = useState(true);
+  const [showTryOnBanner, setShowTryOnBanner] = useState(true);
+  const [showCenterStartBanner, setShowCenterStartBanner] = useState(true);
+
+  // Determine current guidance step based on state
+  const getCurrentGuidanceStep = (): 'blank-canvas-start' | 'uploaded-image-start' | 'has-annotations' | 'ready-to-idealize' | 'has-generated' | 'ready-for-tryon' => {
+    if (gallery.length > 0) {
+      return 'has-generated';
+    }
+    
+    if (annotations.length > 0 || maskStrokes.length > 0) {
+      return 'has-annotations';
+    }
+    
+    if (isBlankCanvas) {
+      return 'blank-canvas-start';
+    }
+    
+    return 'uploaded-image-start';
+  };
 
   // Fullscreen handlers
   const enterFullscreen = useCallback(() => {
@@ -248,6 +272,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           setDimensions({ width, height });
           setShowStartOptions(false);
           setShowSizeSelector(false);
+          setIsBlankCanvas(true);
           clearAll();
         }).catch((error) => {
           onError?.("Failed to create blank canvas");
@@ -285,6 +310,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           // Use calculated dimensions directly to preserve aspect ratio
           setDimensions(canvasDims);
           setShowStartOptions(false);
+          setIsBlankCanvas(false);
           clearAll();
         } else {
           // If there's already a background image, add this as an image annotation
@@ -785,64 +811,17 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       
       <main className="max-w-7xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
         {/* Creative Studios Navigation */}
-        <div className="mb-8">
-          <h2 className="text-xl font-serif tracking-tight text-foreground mb-4 flex items-center gap-2">
-            <TestTube className="h-5 w-5 text-primary" />
-            Creative Studios
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Explore AI-powered creative tools for virtual try-on and image transformation.
-          </p>
-          
-          {/* <div className="flex gap-3 text-sm"> */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
-              <Link href="/dashboard" className="w-full sm:w-auto">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-muted-foreground hover:text-foreground flex items-center justify-start sm:justify-center"
-                >
-                  <Home className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
-                  <span className="truncate">Try-On Studio</span>
-                </Button>
-              </Link>
-              
-              <Link href="/prompt-studio" className="w-full sm:w-auto">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-muted-foreground hover:text-foreground flex items-center justify-start sm:justify-center"
-                >
-                  <Sparkles className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
-                  <span className="truncate">Prompt Studio</span>
-                </Button>
-              </Link>
-              
-              <div className="relative w-full sm:w-auto">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="w-full sm:w-auto h-10 sm:h-8 px-3 text-primary hover:text-primary/90 bg-primary/5 flex items-center justify-start sm:justify-center"
-                >
-                  <Palette className="h-4 w-4 sm:h-3 sm:w-3 mr-2" />
-                  <span className="truncate">Canvas Studio</span>
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    Active
-                  </Badge>
-                </Button>
-              </div>
-            </div>
-        </div>
-        
+     
+   
         {/* Main Canvas Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-serif tracking-tight text-foreground">
-                Canvas Studio
+                Studio 
               </p>
               <span className="opacity-70 text-sm text-muted-foreground">
-                Create, annotate, and transform images with AI
+                Craft your masterpiece with Our Studio. Bring ideas to life.
               </span>
             </div>
             {image && (
@@ -857,10 +836,103 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           <Card className="border-ring bg-background">
             <CardContent className="p-0">
               <div ref={fullscreenRef} className={`relative ${isFullscreen ? 'h-[100vh] w-[100vw]' : 'h-[85vh]'} ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
+                {/* Guidance Banner - Primary UX guidance system */}
+                {image && !showStartOptions && (
+                  <GuidanceBanner
+                    currentStep={getCurrentGuidanceStep()}
+                    hasAnnotations={annotations.length > 0 || maskStrokes.length > 0}
+                    hasGenerated={gallery.length > 0}
+                    isBlankCanvas={isBlankCanvas}
+                  />
+                )}
+                
+                {/* Banner when tools panel is closed and user needs to draw */}
+                {showToolsPanelBanner && image && !isToolsPanelOpen && annotations.length === 0 && maskStrokes.length === 0 && isBlankCanvas && !isGenerating && (
+                  <div className="absolute top-20 left-4 z-20 max-w-xs">
+                    <div className="bg-primary/10 border border-primary/30 text-foreground rounded-lg p-3 shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Palette className="h-4 w-4 text-primary" />
+                          <span className="font-medium text-sm">Open Tools Panel</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 hover:bg-primary/20"
+                          onClick={() => setShowToolsPanelBanner(false)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Click the "Tools" button on the left to start drawing
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Banner when uploaded image - suggesting mask tool */}
+                {showMaskToolBanner && image && !isBlankCanvas && annotations.length === 0 && maskStrokes.length === 0 && gallery.length === 0 && !activeTool && !isGenerating && (
+                  <div className="absolute top-20 left-4 z-20 max-w-sm">
+                    <div className="bg-blue-50 border border-blue-200 text-foreground rounded-lg p-3 shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Lasso className="h-4 w-4 text-blue-600" />
+                          <span className="font-medium text-sm">Tip: Use the Mask Tool</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 hover:bg-blue-100"
+                          onClick={() => setShowMaskToolBanner(false)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Open Tools panel and select Mask to paint areas you want to edit, or add drawings/annotations
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
                 <div 
                   className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto"
                   onWheel={handleWheel}
                 >
+                  {/* Center Start Banner - appears when canvas is first loaded */}
+                  {showCenterStartBanner && image && annotations.length === 0 && maskStrokes.length === 0 && gallery.length === 0 && !isGenerating && (
+                    <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none">
+                      <div className="bg-white border-2 border-primary rounded-lg shadow-xl p-6 max-w-md pointer-events-auto">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 p-2 rounded">
+                              <Sparkles className="h-5 w-5 text-primary" />
+                            </div>
+                            <h3 className="text-base font-semibold text-foreground">Getting Started</h3>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-primary/20"
+                            onClick={() => setShowCenterStartBanner(false)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {isBlankCanvas 
+                            ? "Use the Tools panel to draw or add images, then click the 'Idealize' button below to transform your design with AI"
+                            : "Use the Mask tool to paint areas you want to edit, or add annotations. Then click 'Idealize' to enhance with AI"}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-primary bg-primary/5 px-3 py-2 rounded">
+                          <ArrowDown className="h-4 w-4" />
+                          <span>After drawing, look for the Idealize button below</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {image ? (
                     <div 
                       className="flex items-center justify-center p-6 relative"
@@ -895,8 +967,15 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                     
                     {/* Image Tool Helper Tooltip */}
                     {activeTool === "image" && (
-                      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg text-sm font-medium animate-in fade-in-0 slide-in-from-top-2 z-50">
-                        📸 Click anywhere on the canvas to upload an image
+                      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1.5 rounded-md shadow-lg text-xs z-50">
+                        Click anywhere on the canvas to upload an image
+                      </div>
+                    )}
+                    
+                    {/* Mask Tool Helper Tooltip */}
+                    {activeTool === "mask" && maskStrokes.length === 0 && (
+                      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1.5 rounded-md shadow-lg text-xs z-50">
+                        Paint over the areas you want to edit
                       </div>
                     )}
                   </div>
@@ -931,105 +1010,149 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                           </CardHeader>
                           <CardContent className="p-3 max-h-[calc(100vh-500px)] overflow-y-auto">
                             {/* Tools Grid */}
-                            <div className="grid grid-cols-3 gap-2">
-                              <Button
-                                variant={activeTool === "draw" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "draw") {
-                                    setActiveTool(null);
-                                  } else {
-                                    setActiveTool("draw");
-                                  }
-                                }}
-                                disabled={isGenerating}
-                                className="h-auto aspect-square flex flex-col items-center gap-1"
-                              >
-                                <Pen className="h-8 w-8" />
-                                <span className="text-xs">Draw</span>
-                              </Button>
-                              <Button
-                                variant={activeTool === "arrow" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "arrow") {
-                                    setActiveTool(null);
-                                  } else {
-                                    setActiveTool("arrow");
-                                  }
-                                }}
-                                disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto aspect-square flex flex-col items-center gap-1"
-                              >
-                                <ArrowRight className="h-8 w-8" />
-                                <span className="text-xs">Arrow</span>
-                              </Button>
-                              <Button
-                                variant={activeTool === "text" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "text") {
-                                    setActiveTool(null);
-                                  } else {
-                                    setActiveTool("text");
-                                  }
-                                }}
-                                disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto aspect-square flex flex-col items-center gap-1"
-                              >
-                                <Type className="h-8 w-8" />
-                                <span className="text-xs tracking-tighter">Text</span>
-                              </Button>
-                              <Button
-                                variant={activeTool === "image" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "image") {
-                                    setActiveTool(null);
-                                  } else {
-                                    setActiveTool("image");
-                                  }
-                                }}
-                                disabled={isGenerating || activeTool === "mask"}
-                                className="h-full aspect-square flex flex-col items-center"
-                              >
-                                <Image className="h-8 w-8" />
-                                <span className="text-xs">Image</span>
-                              </Button>
-                              <Button
-                                variant={activeTool === "mask" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "mask") {
-                                    setActiveTool(null);
-                                    setMaskPrompt("");
-                                  } else {
-                                    setActiveTool("mask");
-                                  }
-                                }}
-                                disabled={isGenerating}
-                                className="h-auto aspect-square flex flex-col items-center gap-1"
-                              >
-                                <Lasso className="h-8 w-8" />
-                                <span className="text-xs">Mask</span>
-                              </Button>
-                              <Button
-                                variant={activeTool === "prompt" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  if (activeTool === "prompt") {
-                                    setActiveTool(null);
-                                  } else {
-                                    setActiveTool("prompt");
-                                  }
-                                }}
-                                disabled={isGenerating || activeTool === "mask"}
-                                className="h-auto aspect-square flex flex-col items-center gap-1"
-                              >
-                                <Sparkles className="h-8 w-8" />
-                                <span className="text-xs">Prompt</span>
-                              </Button>
-                            </div>
+                            <TooltipProvider>
+                              <div className="grid grid-cols-3 gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "draw" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "draw") {
+                                          setActiveTool(null);
+                                        } else {
+                                          setActiveTool("draw");
+                                        }
+                                      }}
+                                      disabled={isGenerating}
+                                      className="h-auto aspect-square flex flex-col items-center gap-1"
+                                    >
+                                      <Pen className="h-8 w-8" />
+                                      <span className="text-xs">Draw</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Draw freehand sketches on the canvas</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "arrow" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "arrow") {
+                                          setActiveTool(null);
+                                        } else {
+                                          setActiveTool("arrow");
+                                        }
+                                      }}
+                                      disabled={isGenerating || activeTool === "mask"}
+                                      className="h-auto aspect-square flex flex-col items-center gap-1"
+                                    >
+                                      <ArrowRight className="h-8 w-8" />
+                                      <span className="text-xs">Arrow</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Add arrows to point and annotate</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "text" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "text") {
+                                          setActiveTool(null);
+                                        } else {
+                                          setActiveTool("text");
+                                        }
+                                      }}
+                                      disabled={isGenerating || activeTool === "mask"}
+                                      className="h-auto aspect-square flex flex-col items-center gap-1"
+                                    >
+                                      <Type className="h-8 w-8" />
+                                      <span className="text-xs tracking-tighter">Text</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Add text labels and notes</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "image" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "image") {
+                                          setActiveTool(null);
+                                        } else {
+                                          setActiveTool("image");
+                                        }
+                                      }}
+                                      disabled={isGenerating || activeTool === "mask"}
+                                      className="h-full aspect-square flex flex-col items-center"
+                                    >
+                                      <Image className="h-8 w-8" />
+                                      <span className="text-xs">Image</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Add images or reference photos</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "mask" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "mask") {
+                                          setActiveTool(null);
+                                          setMaskPrompt("");
+                                        } else {
+                                          setActiveTool("mask");
+                                        }
+                                      }}
+                                      disabled={isGenerating}
+                                      className="h-auto aspect-square flex flex-col items-center gap-1"
+                                    >
+                                      <Lasso className="h-8 w-8" />
+                                      <span className="text-xs">Mask</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Select areas to edit with AI</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant={activeTool === "prompt" ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={() => {
+                                        if (activeTool === "prompt") {
+                                          setActiveTool(null);
+                                        } else {
+                                          setActiveTool("prompt");
+                                        }
+                                      }}
+                                      disabled={isGenerating || activeTool === "mask"}
+                                      className="h-auto aspect-square flex flex-col items-center gap-1"
+                                    >
+                                      <Sparkles className="h-8 w-8" />
+                                      <span className="text-xs">Prompt</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>Generate with AI using a text prompt</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </TooltipProvider>
 
                             {/* Properties */}
                             {activeTool && activeTool !== "prompt" && (activeTool === "draw" || activeTool === "arrow" || activeTool === "text" || activeTool === "mask") && (
@@ -1095,6 +1218,31 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       </div>
                     )}
                   </>
+                )}
+
+                {/* Banner pointing to gallery and Try On */}
+                {showTryOnBanner && gallery.length > 0 && !isGalleryOpen && (
+                  <div className="absolute top-20 right-20 z-20 max-w-xs">
+                    <div className="bg-green-50 border border-green-200 text-foreground rounded-lg p-3 shadow-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <ShirtIcon className="h-4 w-4 text-green-600" />
+                          <span className="font-medium text-sm">Ready to Try On</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 w-5 p-0 hover:bg-green-100"
+                          onClick={() => setShowTryOnBanner(false)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Open your Gallery to view images and click "Try On" to see them on a model
+                      </p>
+                    </div>
+                  </div>
                 )}
 
                 {/* Generated Images Overlay - Right Side */}
@@ -1339,6 +1487,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             isMaskActive={activeTool === "mask"}
             hasMaskSelection={maskStrokes.length > 0}
             maskPrompt={maskPrompt}
+            hasContent={annotations.length > 0 || maskStrokes.length > 0}
             onClickUpload={() => fileInputRef.current?.click()}
             onClickNew={() => {
               if (window.confirm("Create a new canvas? Any unsaved work will be lost.")) {

@@ -142,8 +142,8 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <Card className="w-full max-w-2xl mx-4 shadow-xl border-border">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-serif">Get Started</CardTitle>
-          <CardDescription className="text-base">How would you like to begin?</CardDescription>
+          <CardTitle className="text-3xl font-serif">Welcome to Canvas Studio</CardTitle>
+          <CardDescription className="text-base">Choose your starting point</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
@@ -151,30 +151,42 @@ export const WelcomeStartModal: React.FC<WelcomeStartModalProps> = ({
             <Button
               variant="outline"
               onClick={onClickUpload}
-              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[200px]"
+              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[240px]"
             >
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Upload size={28} className="text-primary" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Upload Image</h3>
-              <p className="text-sm text-muted-foreground text-center">Start with an existing image</p>
+              <p className="text-sm text-muted-foreground text-center mb-3">Start with an existing photo or design</p>
+              <div className="text-xs text-muted-foreground/80 text-center space-y-1">
+                <p>→ Use Mask tool to edit areas</p>
+                <p>→ Click Idealize to enhance</p>
+                <p>→ Try on your creation!</p>
+              </div>
             </Button>
 
             <Button
               variant="outline"
               onClick={onOpenSizeSelector}
-              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[200px]"
+              className="h-auto flex flex-col items-center justify-center p-8 hover:bg-primary/5 hover:border-primary transition-all group min-h-[240px]"
             >
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Square size={28} className="text-primary" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Blank Canvas</h3>
-              <p className="text-sm text-muted-foreground text-center">Start from scratch</p>
+              <p className="text-sm text-muted-foreground text-center mb-3">Create from your imagination</p>
+              <div className="text-xs text-muted-foreground/80 text-center space-y-1">
+                <p>→ Draw or add images</p>
+                <p>→ Click Idealize to generate</p>
+                <p>→ Try on your design!</p>
+              </div>
             </Button>
           </div>
 
-          <div className="text-center pt-2">
-            <p className="text-sm text-muted-foreground">💡 Use drawing tools to sketch, then transform with AI</p>
+          <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
+            <p className="text-sm text-center text-muted-foreground">
+              <span className="font-medium">💡 Pro Tip:</span> All tools support tooltips! Hover over any button to learn what it does.
+            </p>
           </div>
         </CardContent>
       </Card>

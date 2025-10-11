@@ -29,9 +29,9 @@ export default function Header() {
           {/* Logo Section */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-3">
-              <div className="h-22 w-22 flex items-center justify-center">
+              <Link href="/dashboard" className="h-22 w-22 flex items-center justify-center">
                 <TrialRoomLogowithText className="text-primary"/>
-              </div>
+              </Link>
             </div>
           </div>
 
