@@ -1,44 +1,9 @@
-import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { NextResponse } from "next/server"; 
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
-import crypto from "crypto";
+import { uploadToS3 } from "@/lib/aws-s3/utils";
 
-// Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.TRIALROOM_AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.TRIALROOM_AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.TRIALROOM_AWS_SECRET_ACCESS_KEY!,
-  },
-});
-
-const BUCKET_NAME = process.env.TRIALROOM_AWS_S3_BUCKET_NAME!;
-
-// Helper function to upload file to S3
-async function uploadToS3(file: File, prefix: string): Promise<string> {
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}-${file.name}`;
-  
-  const uploadParams = {
-    Bucket: BUCKET_NAME,
-    Key: fileName,
-    Body: fileBuffer,
-    ContentType: file.type,
-    // Make the object publicly readable
-  };
-
-  try {
-    await s3Client.send(new PutObjectCommand(uploadParams));
-    
-    // Return the public URL
-    return `https://${BUCKET_NAME}.s3.${process.env.TRIALROOM_AWS_REGION || "us-east-1"}.amazonaws.com/${fileName}`;
-  } catch (error) {
-    console.error("S3 upload error:", error);
-    throw new Error("File upload Failed. Please try again.");
-  }
-}
 
 export async function POST(request: Request) {
   try {
