@@ -414,16 +414,13 @@ export default function TrialRoom() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-8 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950/20 relative"
+                className="h-8 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950/20 bg-purple-50/50 border border-purple-200/50"
               >
                 <Zap className="h-3 w-3 mr-2" />
                 Beta Lab
                 <Badge variant="secondary" className="ml-2 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                   Beta
                 </Badge>
-                {/* Highlighting pulse effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg opacity-20 animate-pulse"></div>
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg opacity-10 animate-ping"></div>
               </Button>
             </Link>
           </div>
