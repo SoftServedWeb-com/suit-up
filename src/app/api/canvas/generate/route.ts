@@ -50,7 +50,8 @@ export async function POST(request: Request) {
     let enhancedPrompt = prompt;
     console.log("[Canvas generate] PROMPT before enhancment:", prompt);
     if (maskDataStr) {
-      enhancedPrompt = `You are to mask the selected section and make the following changes : ${prompt}`;
+      enhancedPrompt = `
+      You are a fashion designer. You are task is to identify the masked layer, type of clothing, and make then do the following changes: ${prompt}`;
     }
 
     const promptArray: any[] = [

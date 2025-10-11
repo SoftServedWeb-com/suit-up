@@ -32,6 +32,7 @@ interface AnnotationCanvasProps {
     fontSize: number;
     brushSize: number;
   };
+  isFullscreen?: boolean;
   onMouseDown?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseMove?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   onMouseUp?: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -56,6 +57,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   image,
   colors,
   sizes,
+  isFullscreen = false,
   onMouseDown,
   onMouseMove,
   onMouseUp,
@@ -111,7 +113,7 @@ export const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
         style={{
           width: "100%",
           height: "auto",
-          maxHeight: "80vh",
+          maxHeight: isFullscreen ? "100vh" : "80vh",
           touchAction: "none",
           objectFit: "contain",
         }}

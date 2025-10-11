@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";

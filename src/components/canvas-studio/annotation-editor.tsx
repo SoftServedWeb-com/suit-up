@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, useRef, useCallback } from "react";
-import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, ShirtIcon } from "lucide-react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Square, Home, Palette, Sparkles, TestTube, Zap, Pen, ArrowRight, Type, Image, Lasso, MessageSquare, ChevronDown, ChevronRight, X, ChevronUp, ZoomIn, ZoomOut, Trash2, Undo, Redo, ShirtIcon, Maximize2, Minimize2 } from "lucide-react";
 import { useAnnotations } from "@/lib/hooks";
 import { AnnotationCanvas } from "./canvas";
 import { TextInputModal, PromptInputModal, GeneratedImageModal, TryOnModal } from "./modals";
@@ -60,6 +60,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const config = { ...defaultConfig, ...userConfig };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const materialFileRef = useRef<File | null>(null);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
 
   // State
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -88,6 +89,39 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   const [cursorStyle, setCursorStyle] = useState<string>("default");
   const [showTryOnModal, setShowTryOnModal] = useState(false);
   const [tryOnGarmentUrl, setTryOnGarmentUrl] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Fullscreen handlers
+  const enterFullscreen = useCallback(() => {
+    if (!fullscreenRef.current) return;
+    const el = fullscreenRef.current as any;
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen || el.mozRequestFullScreen;
+    if (request) request.call(el);
+  }, []);
+
+  const exitFullscreen = useCallback(() => {
+    const d = document as any;
+    const exit = document.exitFullscreen || d.webkitExitFullscreen || d.msExitFullscreen || d.mozCancelFullScreen;
+    if (exit) exit.call(document);
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      const d = document as any;
+      const fsElement = document.fullscreenElement || d.webkitFullscreenElement || d.msFullscreenElement || d.mozFullScreenElement;
+      setIsFullscreen(!!fsElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange as any);
+    document.addEventListener('mozfullscreenchange', handleFsChange as any);
+    document.addEventListener('MSFullscreenChange', handleFsChange as any);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange as any);
+      document.removeEventListener('mozfullscreenchange', handleFsChange as any);
+      document.removeEventListener('MSFullscreenChange', handleFsChange as any);
+    };
+  }, []);
 
   const addToGallery = (dataUrl: string) => {
     setGallery((prev) => {
@@ -822,7 +856,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
           {/* Full-Screen Canvas Card */}
           <Card className="border-ring bg-background">
             <CardContent className="p-0">
-              <div className="relative h-[85vh]">
+              <div ref={fullscreenRef} className={`relative ${isFullscreen ? 'h-[100vh] w-[100vw]' : 'h-[85vh]'} ${isFullscreen ? 'fixed inset-0 z-50 bg-background' : ''}`}>
                 <div 
                   className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 overflow-auto"
                   onWheel={handleWheel}
@@ -852,6 +886,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                       image={image}
                       colors={colors}
                       sizes={sizes}
+                      isFullscreen={isFullscreen}
                       onMouseDown={handleMouseDown}
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
@@ -1168,7 +1203,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                         </Card>
                       </div>
                     ) : (
-                      <div className="absolute top-4 right-4 z-10">
+                      <div className="absolute top-4 right-4 z-10 flex gap-2">
                         <Button
                           variant="default"
                           size="sm"
@@ -1178,6 +1213,15 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                         >
                           <Image className="h-4 w-4 mr-2" />
                           {gallery.length}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="h-9 shadow-xl"
+                          onClick={() => (isFullscreen ? exitFullscreen() : enterFullscreen())}
+                          title={isFullscreen ? "Exit full screen" : "Enter full screen"}
+                        >
+                          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     )}
