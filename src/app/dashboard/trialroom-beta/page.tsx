@@ -379,7 +379,7 @@ export default function DashboardBeta() {
   return (
     <div className="min-h-screen bg-background">
 
-      <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
+      <main className="max-w-5xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
         {/* Beta Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
