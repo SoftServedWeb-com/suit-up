@@ -97,28 +97,32 @@ export const PromptInputModal: React.FC<PromptInputModalProps> = ({
             </div>
 
             {/* Material mode */}
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-700 min-w-20">Material</span>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="material-mode"
-                  value="text"
-                  checked={materialMode === "text"}
-                  onChange={() => setMaterialMode("text")}
-                />
-                Describe
-              </label>
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="radio"
-                  name="material-mode"
-                  value="upload"
-                  checked={materialMode === "upload"}
-                  onChange={() => setMaterialMode("upload")}
-                />
-                Upload reference
-              </label>
+            <div className="space-y-2">
+              <span className="text-sm text-slate-700">Material</span>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => setMaterialMode("text")}
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    materialMode === "text"
+                      ? "bg-primary text-white"
+                      : "bg-accent/10 text-slate-600 hover:bg-accent/20"
+                  }`}
+                >
+                  Describe
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialMode("upload")}
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    materialMode === "upload"
+                      ? "bg-primary text-white"
+                      : "bg-accent/10 text-slate-600 hover:bg-accent/20"
+                  }`}
+                >
+                  Upload
+                </button>
+              </div>
             </div>
 
             {materialMode === "text" ? (

@@ -385,12 +385,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
       const y = (event.clientY - rect.top) * (canvas.height / rect.height) / zoomLevel;
       const point = { x, y, timestamp: Date.now() };
 
-      if (activeTool === "text") {
-        setEditingTextId(null);
-        setTextPosition({ x, y });
-        setShowTextModal(true);
-        return;
-      }
 
       if (activeTool === "image") {
         overlayImageInputRef.current?.click();
@@ -469,8 +463,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         setCursorStyle("crosshair");
       } else if (activeTool === "image") {
         setCursorStyle("crosshair");
-      } else if (activeTool === "text") {
-        setCursorStyle("text");
       } else if (!activeTool || activeTool === null) {
         // No active tool - show context-aware cursors for selection/resizing
         const handleSize = 12;
@@ -590,15 +582,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
   );
 
   // Auto-open modals
-  React.useEffect(() => {
-    if (activeTool === "text" && !showTextModal && !editingTextId) {
-      setTextPosition({
-        x: dimensions.width / 2,
-        y: dimensions.height / 2,
-      });
-      setShowTextModal(true);
-    }
-  }, [activeTool, showTextModal, editingTextId, dimensions]);
 
   React.useEffect(() => {
     if (activeTool === "prompt" && !showPromptModal) {
@@ -1061,29 +1044,6 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      variant={activeTool === "text" ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={() => {
-                                        if (activeTool === "text") {
-                                          setActiveTool(null);
-                                        } else {
-                                          setActiveTool("text");
-                                        }
-                                      }}
-                                      disabled={isGenerating || activeTool === "mask"}
-                                      className="h-auto aspect-square flex flex-col items-center gap-1"
-                                    >
-                                      <Type className="h-8 w-8" />
-                                      <span className="text-xs tracking-tighter">Text</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="right">
-                                    <p>Add text labels and notes</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
                                       variant={activeTool === "image" ? "default" : "outline"}
                                       size="sm"
                                       onClick={() => {
@@ -1155,7 +1115,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                             </TooltipProvider>
 
                             {/* Properties */}
-                            {activeTool && activeTool !== "prompt" && (activeTool === "draw" || activeTool === "arrow" || activeTool === "text" || activeTool === "mask") && (
+                            {activeTool && activeTool !== "prompt" && (activeTool === "draw" || activeTool === "arrow" || activeTool === "mask") && (
                               <div className="space-y-3 pt-2 border-t border-border">
                                 <div className="space-y-2">
                                   <label className="text-xs text-muted-foreground">Color</label>
@@ -1169,30 +1129,27 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between">
                                     <label className="text-xs text-muted-foreground">
-                                      {activeTool === "text" ? "Font Size" : activeTool === "mask" ? "Brush Size" : "Thickness"}
+                                      {activeTool === "mask" ? "Brush Size" : "Thickness"}
                                     </label>
                                     <span className="text-xs font-medium">
                                       {activeTool === "draw" ? sizes.drawThickness :
                                        activeTool === "arrow" ? sizes.arrowThickness :
-                                       activeTool === "text" ? sizes.fontSize :
                                        sizes.brushSize}
                                     </span>
                                   </div>
                                   <input
                                     type="range"
-                                    min={activeTool === "text" ? 12 : activeTool === "mask" ? 10 : 1}
-                                    max={activeTool === "text" ? 72 : activeTool === "mask" ? 100 : 20}
+                                    min={activeTool === "mask" ? 10 : 1}
+                                    max={activeTool === "mask" ? 100 : 20}
                                     value={
                                       activeTool === "draw" ? sizes.drawThickness :
                                       activeTool === "arrow" ? sizes.arrowThickness :
-                                      activeTool === "text" ? sizes.fontSize :
                                       sizes.brushSize
                                     }
                                     onChange={(e) => {
                                       const value = parseInt(e.target.value);
                                       if (activeTool === "draw") handleSizeChange("drawThickness", value);
                                       else if (activeTool === "arrow") handleSizeChange("arrowThickness", value);
-                                      else if (activeTool === "text") handleSizeChange("fontSize", value);
                                       else if (activeTool === "mask") handleSizeChange("brushSize", value);
                                     }}
                                     className="w-full"
@@ -1308,17 +1265,43 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
                                       onClick={async () => {
                                         try {
                                           const img = await loadImage(url);
-                                          const maxWidth = config.canvas.maxWidth;
-                                          const maxHeight = config.canvas.maxHeight;
-                                          const canvasDims = calculateCanvasDimensions(
-                                            img.width,
-                                            img.height,
-                                            maxWidth,
-                                            maxHeight
-                                          );
-                                          setImage(img);
-                                          setDimensions(canvasDims);
-                                        } catch {}
+                                          
+                                          // If no background image exists, create a blank canvas first
+                                          if (!image) {
+                                            createBlankCanvas(800, 600);
+                                            // Wait a bit for the canvas to be created
+                                            setTimeout(() => {
+                                              addImageAnnotation(400, 300, 200, 150, img);
+                                              setActiveTool(null);
+                                            }, 100);
+                                          } else {
+                                            // Calculate default size (30% of canvas size)
+                                            const maxSize = Math.min(dimensions.width, dimensions.height) * 0.3;
+                                            let width = img.width;
+                                            let height = img.height;
+
+                                            if (width > maxSize || height > maxSize) {
+                                              const aspectRatio = width / height;
+                                              if (width > height) {
+                                                width = maxSize;
+                                                height = maxSize / aspectRatio;
+                                              } else {
+                                                height = maxSize;
+                                                width = maxSize * aspectRatio;
+                                              }
+                                            }
+
+                                            // Position at center of canvas
+                                            const x = (dimensions.width - width) / 2;
+                                            const y = (dimensions.height - height) / 2;
+
+                                            addImageAnnotation(x, y, width, height, img);
+                                            setActiveTool(null);
+                                          }
+                                        } catch (error) {
+                                          console.error("Failed to add image from gallery:", error);
+                                          onError?.("Failed to add image from gallery");
+                                        }
                                       }}
                                     >
                                       Use
@@ -1488,7 +1471,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
             hasMaskSelection={maskStrokes.length > 0}
             maskPrompt={maskPrompt}
             hasContent={annotations.length > 0 || maskStrokes.length > 0}
-            onClickUpload={() => fileInputRef.current?.click()}
+            onClickUpload={() => overlayImageInputRef.current?.click()}
             onClickNew={() => {
               if (window.confirm("Create a new canvas? Any unsaved work will be lost.")) {
                 setShowStartOptions(true);
@@ -1631,7 +1614,7 @@ export const AnnotationEditor: React.FC<AnnotationEditorProps> = ({
         showSizeSelector={showSizeSelector}
         onOpenSizeSelector={() => setShowSizeSelector(true)}
         onCloseSizeSelector={() => setShowSizeSelector(false)}
-        onClickUpload={() => fileInputRef.current?.click()}
+        onClickUpload={() => overlayImageInputRef.current?.click()}
         presetSizes={presetSizes}
         customWidth={customWidth}
         customHeight={customHeight}

@@ -56,14 +56,14 @@ export const DrawingToolbar: React.FC<DrawingToolbarProps> = ({
           disabled={isToolDisabled("arrow")}
         />
 
-        <ToolButton
+        {/* <ToolButton
           tool="text"
           activeTool={activeTool}
           onSelect={isToolDisabled("text") ? () => {} : onToolSelect}
           icon={<Type size={18} />}
           label="Text"
           disabled={isToolDisabled("text")}
-        />
+        /> */}
 
         <ToolButton
           tool="image"
