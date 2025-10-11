@@ -206,7 +206,7 @@ export async function POST(request: Request) {
       },
     ];
 
-    console.log("Sending request to Gemini AI for virtual try-on...");
+    console.log("Sending request for virtual try-on...");
 
     // Configure safety settings to be less restrictive for clothing try-on
     const safetySettings = [
@@ -295,17 +295,17 @@ export async function POST(request: Request) {
       throw new Error(creditResult.error || "Failed to consume credit");
     }
 
-    console.log("Gemini AI virtual try-on completed:", generatedImageUrl);
+    console.log("virtual try-on completed:", generatedImageUrl);
 
     // Save to database with a unique prediction ID for consistency
-    const predictionId = `gemini-${crypto.randomUUID()}`;
+    const predictionId = `beta-${crypto.randomUUID()}`;
     const tryOnRequest = await db.tryOnRequest.create({
       data: {
         predictionId,
         userId,
         modelImageUrl,
         garmentImageUrl,
-        category,
+        category: `beta:${category}`,
         status: "COMPLETED",
         creditsUsed: 1,
         resultImageUrl: generatedImageUrl

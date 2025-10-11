@@ -109,10 +109,11 @@ export default function TrialRoom() {
         const data = await response.json();
         console.log("Get all Status Update Data :", JSON.stringify(data));
         
-        // Filter out requests with prompt categories and canvas-edit category
+        // Filter out requests with prompt categories, canvas-edit category, and beta requests
         const filteredRequests = data.requests.filter((request: TryOnRequest) => 
           !request.category.toLowerCase().startsWith("prompt:") &&
-          request.category.toLowerCase() !== "canvas-edit"
+          request.category.toLowerCase() !== "canvas-edit" &&
+          !request.category.toLowerCase().startsWith("beta:")
         );
         
         setAllRequests(filteredRequests);
@@ -398,7 +399,7 @@ export default function TrialRoom() {
           </p>
           
           <div className="flex gap-3 text-sm">
-            <Link href="/prompt-studio">
+            <Link href="/dashboard/preset-gallery">
               <Button 
                 variant="ghost" 
                 size="sm"
@@ -409,17 +410,20 @@ export default function TrialRoom() {
               </Button>
             </Link>
             
-            <Link href="/dashboard-beta">
+            <Link href="/dashboard/trialroom-beta">
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-8 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950/20"
+                className="h-8 px-3 text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:text-purple-300 dark:hover:bg-purple-950/20 relative"
               >
                 <Zap className="h-3 w-3 mr-2" />
                 Beta Lab
                 <Badge variant="secondary" className="ml-2 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
                   Beta
                 </Badge>
+                {/* Highlighting pulse effect */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg opacity-20 animate-pulse"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg opacity-10 animate-ping"></div>
               </Button>
             </Link>
           </div>

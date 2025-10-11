@@ -5,7 +5,7 @@ import {Toaster} from "sonner"
 
 export const metadata: Metadata = {
   title: "Trailroom.Studio",
-  description: "Experience the future of fashion with AI-powered virtual try-ons",
+  description: "Experience the future of fashion with TrialRoom.Studio",
 };
 
 export default async function RootLayout({

@@ -134,14 +134,18 @@ export default function DashboardBeta() {
     try {
       setIsLoading(true);
       const response = await fetch("/api/try-on/status-history");
+      console.log("Get all Status Update :", response.status);
 
       if (response.ok) {
         const data = await response.json();
-        // Filter for Gemini/beta requests (those with predictionId starting with 'gemini-')
-        const betaRequests = data.requests.filter((req: TryOnRequest) =>
-          req.predictionId.startsWith("gemini-")
+        console.log("Get all Status Update Data :", JSON.stringify(data));
+        
+        // Filter for beta requests only
+        const filteredRequests = data.requests.filter((request: TryOnRequest) => 
+          request.category.toLowerCase().startsWith("beta:")
         );
-        setAllRequests(betaRequests);
+        
+        setAllRequests(filteredRequests);
       } else {
         console.error("Failed to load history:", response.statusText);
       }
@@ -238,9 +242,7 @@ export default function DashboardBeta() {
 
       // Show success toast with provider info
       toast.success("Virtual Try-On Complete! 🎉", {
-        description: `Generated using ${
-          data.provider === "gemini" ? "Google Gemini AI" : data.provider
-        }. Credits remaining: ${data.creditsRemaining}`,
+        description: `Generated using Beta AI. Credits remaining: ${data.creditsRemaining}`,
       });
 
       // If we have a result image, show the result modal
@@ -298,7 +300,7 @@ export default function DashboardBeta() {
 
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = `trialRoomStudio_gemini_${Date.now()}.png`;
+      link.download = `trialRoomStudio_beta_${Date.now()}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -321,8 +323,8 @@ export default function DashboardBeta() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "My Virtual Try-On Result (Beta - Gemini AI)",
-          text: "Check out how this outfit looks on me! Generated with Google Gemini AI.",
+          title: "My Virtual Try-On Result (Beta)",
+          text: "Check out how this outfit looks on me! Generated with Beta AI.",
           url: imageUrl,
         });
       } catch (error) {
@@ -376,16 +378,12 @@ export default function DashboardBeta() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
-      {/* Floating Subscription Indicator */}
-      <FloatingSubscriptionIndicator />
 
       <main className="max-w-4xl bg-white mx-auto px-4 sm:px-6 lg:px-8 py-8 border border-y-0 border-x">
         {/* Beta Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <Link href="/dashboard">
+            <Link href="/dashboard/trialroom">  
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Main Dashboard
@@ -393,25 +391,6 @@ export default function DashboardBeta() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-serif tracking-tight text-foreground">
-                Virtual Try-On
-              </h1>
-            </div>
-            <Badge
-              variant="secondary"
-              className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
-              <Zap className="h-3 w-3 mr-1" />
-              Beta
-            </Badge>
-          </div>
-
-          <p className="text-muted-foreground max-w-2xl">
-            Experience next-generation virtual try-on powered with our new beta
-            lab. This experimental feature provides instant results with
-            advanced AI capabilities.
-          </p>
         </div>
 
         <FashionQuote />
@@ -421,9 +400,16 @@ export default function DashboardBeta() {
             <div>
               <p className="text-2xl font-serif tracking-tight text-foreground">
                 Tailor Board
+                {" "}
+                <Badge
+              variant="secondary"
+              className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
+              <Zap className="h-3 w-3 mr-1" />
+              Beta
+            </Badge>
               </p>
               <span className="opacity-70 text-sm text-muted-foreground">
-                Instant AI-powered virtual try-on
+                More Advanced Trialroom
               </span>
             </div>
             <TabsList className="glass-card">
@@ -490,13 +476,13 @@ export default function DashboardBeta() {
                             width={1080}
                             height={1080}
                             src={completedRequests[0].resultImageUrl!}
-                            alt="Gemini AI virtual try-on result"
+                            alt="Trial Room Studio result"
                             className="w-full max-w-xs mx-auto rounded-lg border border-border group-hover:border-primary transition-all duration-200 shadow-sm group-hover:shadow-md"
                           />
                           {/* AI Badge Overlay */}
                           <div className="absolute top-3 left-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                             <Zap className="h-3 w-3" />
-                            Gemini AI
+                            Beta
                           </div>
                           {/* Zoom hint */}
                           <div className="absolute top-3 right-3 bg-background/80 backdrop-blur-sm rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -554,9 +540,9 @@ export default function DashboardBeta() {
                       <div className="space-y-2">
                         <div className="space-y-1 text-sm text-muted-foreground">
                           <div className="flex justify-between">
-                            <span>AI Provider</span>
+                            <span>Provider</span>
                             <span className="text-purple-600 font-medium">
-                              Google Gemini
+                              Beta AI
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -591,7 +577,7 @@ export default function DashboardBeta() {
                           ) : (
                             <>
                               <Download className="h-4 w-4 mr-2" />
-                              Download Gemini Result
+                              Download Beta Result
                             </>
                           )}
                         </Button>
@@ -711,7 +697,7 @@ export default function DashboardBeta() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Generating with Gemini AI...
+                    Generating with Beta AI...
                   </>
                 ) : (
                   <>
@@ -786,8 +772,84 @@ export default function DashboardBeta() {
                             setShowResultModal(true);
                           }
                         }}>
+                        {/* Mobile Layout */}
+                        <div className="block md:hidden space-y-3">
+                          {/* Header Row */}
+                          <div className="flex items-center justify-between">
+                            <Badge
+                              className={getStatusColor(request.status)}
+                              variant="outline">
+                              {request.status}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(request.createdAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Images Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <img
+                                src={request.modelImageUrl}
+                                alt="You"
+                                className="w-12 h-12 object-cover rounded border border-border"
+                              />
+                              <span className="text-muted-foreground">+</span>
+                              <img
+                                src={request.garmentImageUrl}
+                                alt="Item"
+                                className="w-12 h-12 object-cover rounded border border-border"
+                              />
+                            </div>
+
+                            {request.status === "COMPLETED" &&
+                            request.resultImageUrl ? (
+                              <div className="relative">
+                                <img
+                                  src={request.resultImageUrl}
+                                  alt="Result"
+                                  className="w-16 h-16 object-cover rounded-lg border border-border"
+                                />
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
+                              </div>
+                            ) : (
+                              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                                {getStatusIcon(request.status)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Stats Row */}
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <div className="flex items-center gap-3">
+                              {request.processingTime && (
+                                <span>{request.processingTime}s</span>
+                              )}
+                              {request.creditsUsed && (
+                                <span>{request.creditsUsed} credits</span>
+                              )}
+                            </div>
+                            {request.status === "COMPLETED" &&
+                              request.resultImageUrl && (
+                                <ZoomIn className="h-4 w-4 group-hover:text-primary transition-colors" />
+                              )}
+                          </div>
+
+                          {request.errorMessage && (
+                            <p className="text-sm text-destructive">
+                              {request.errorMessage}
+                            </p>
+                          )}
+                        </div>
+
                         {/* Desktop Layout */}
-                        <div className="flex items-center gap-4">
+                        <div className="hidden md:flex items-center gap-4">
                           {/* Status & Result Preview */}
                           <div className="flex-shrink-0">
                             {request.status === "COMPLETED" &&
@@ -795,12 +857,10 @@ export default function DashboardBeta() {
                               <div className="relative">
                                 <img
                                   src={request.resultImageUrl}
-                                  alt="Beta Result"
+                                  alt="Result"
                                   className="w-16 h-16 object-cover rounded-lg border border-border"
                                 />
-                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full border-2 border-background flex items-center justify-center">
-                                  <Zap className="h-3 w-3 text-white" />
-                                </div>
+                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background"></div>
                               </div>
                             ) : (
                               <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
@@ -817,12 +877,6 @@ export default function DashboardBeta() {
                                 variant="outline">
                                 {request.status}
                               </Badge>
-                              <Badge
-                                variant="secondary"
-                                className="text-xs bg-gradient-to-r from-purple-100 to-blue-100 text-purple-800 border-purple-200">
-                                <Zap className="h-3 w-3 mr-1" />
-                                Gemini
-                              </Badge>
                               <span className="text-sm text-muted-foreground">
                                 {new Date(request.createdAt).toLocaleDateString(
                                   "en-US",
@@ -837,9 +891,9 @@ export default function DashboardBeta() {
                             </div>
 
                             <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                              <span className="text-green-600 font-medium">
-                                Instant Generation
-                              </span>
+                              {request.processingTime && (
+                                <span>{request.processingTime}s</span>
+                              )}
                               {request.creditsUsed && (
                                 <span>{request.creditsUsed} credits</span>
                               )}
@@ -860,7 +914,9 @@ export default function DashboardBeta() {
                                 alt="You"
                                 className="w-8 h-8 object-cover rounded border border-border"
                               />
-                              <Zap className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground text-xs">
+                                +
+                              </span>
                               <img
                                 src={request.garmentImageUrl}
                                 alt="Item"
@@ -962,8 +1018,11 @@ export default function DashboardBeta() {
 
               {/* Metadata */}
               <div className="text-center text-sm text-muted-foreground space-y-1">
-                <p>Category: {currentResult.category}</p>
-                <p>Processing: Instant generation</p>
+                {/* Show category without beta prefix */}
+                <p>Category: {currentResult.category.replace(/^beta:/, '')}</p>
+                {currentResult.processingTime && (
+                  <p>Processing time: {currentResult.processingTime} seconds</p>
+                )}
                 {currentResult.creditsUsed && (
                   <p>Credits used: {currentResult.creditsUsed}</p>
                 )}
