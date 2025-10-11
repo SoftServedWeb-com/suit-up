@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { checkCanCreateTryOn, consumeTryOnCredit } from "@/lib/subscription";
 import { HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { RedirectToSignIn } from "@clerk/nextjs";
 import { fileToBase64 } from "@/lib/aws-s3/utils";
 import { genAI } from "@/lib/google";
 
@@ -10,7 +9,10 @@ export async function POST(request: Request) {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return RedirectToSignIn;
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const canCreate = await checkCanCreateTryOn(userId);
@@ -93,9 +95,6 @@ export async function POST(request: Request) {
 
     const response = await genAI.models.generateContent({
       model: "gemini-2.5-flash-image-preview",
-      
-
-      
       contents: promptArray,
       config: {
         safetySettings: [
@@ -152,7 +151,6 @@ export async function POST(request: Request) {
     }
 
     let creditsRemaining = creditResult.remaining;
-
     // If masking was used, consume additional credit for every 2 mask strokes
     if (maskDataStr) {
       try {
